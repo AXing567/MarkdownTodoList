@@ -44,6 +44,21 @@ export async function findList(
   return lists.find((list) => list.id === listId) ?? null;
 }
 
+export async function removeList(
+  registryPath: string,
+  listId: string
+): Promise<{ removed: boolean; lists: TodoListSummary[] }> {
+  const lists = await readRegistry(registryPath);
+  const nextLists = lists.filter((list) => list.id !== listId);
+  const removed = nextLists.length !== lists.length;
+
+  if (removed) {
+    await writeRegistry(registryPath, nextLists);
+  }
+
+  return { removed, lists: nextLists };
+}
+
 async function writeRegistry(registryPath: string, lists: TodoListSummary[]): Promise<void> {
   mkdirSync(dirname(registryPath), { recursive: true });
   await writeFile(registryPath, JSON.stringify({ lists }, null, 2), "utf8");

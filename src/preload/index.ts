@@ -14,6 +14,7 @@ const todoApi: TodoApi = {
   readTodoList: (listId: string) => ipcRenderer.invoke("todo:read", listId),
   addTodo: (request: AddTodoRequest) => ipcRenderer.invoke("todo:add", request),
   toggleTodo: (request: ToggleTodoRequest) => ipcRenderer.invoke("todo:toggle", request),
+  removeTodoList: (listId: string) => ipcRenderer.invoke("todo:remove", listId),
   revealFile: (listId: string) => ipcRenderer.invoke("todo:reveal", listId)
 };
 

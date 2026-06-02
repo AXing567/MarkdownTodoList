@@ -9,7 +9,8 @@ import {
   Loader2,
   MapPin,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
@@ -113,6 +114,26 @@ export function App(): ReactElement {
       const document = await window.todoApi.readTodoList(listId);
       setActiveList(document);
     }, "已切换 TodoList");
+  }
+
+  async function removeListFromApp(listId: string): Promise<void> {
+    await runAction(async () => {
+      const summaries = await window.todoApi.removeTodoList(listId);
+      setLists(summaries);
+
+      if (activeList?.id !== listId) {
+        return;
+      }
+
+      const nextList = summaries[0];
+      if (!nextList) {
+        setActiveList(null);
+        return;
+      }
+
+      const document = await window.todoApi.readTodoList(nextList.id);
+      setActiveList(document);
+    }, "已从列表移除");
   }
 
   async function addTodo(priority: Priority): Promise<void> {
@@ -233,15 +254,28 @@ export function App(): ReactElement {
             <div className="empty-list">还没有 TodoList</div>
           ) : (
             lists.map((list) => (
-              <button
+              <div
                 key={list.id}
-                className={list.id === activeList?.id ? "list-item active" : "list-item"}
-                type="button"
-                onClick={() => void selectList(list.id)}
+                className={list.id === activeList?.id ? "list-row active" : "list-row"}
               >
-                <span>{list.name}</span>
-                <small>{list.storage === "managed" ? "项目内" : "外部文件"}</small>
-              </button>
+                <button
+                  className="list-item"
+                  type="button"
+                  onClick={() => void selectList(list.id)}
+                >
+                  <span>{list.name}</span>
+                  <small>{list.storage === "managed" ? "项目内" : "外部文件"}</small>
+                </button>
+                <button
+                  className="icon-button remove-list-button"
+                  type="button"
+                  title="移除出列表"
+                  aria-label={`移除出列表：${list.name}`}
+                  onClick={() => void removeListFromApp(list.id)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             ))
           )}
         </nav>

@@ -19,7 +19,7 @@ import {
   setTodoCompletedInFile
 } from "./markdownTodo";
 import { getManagedTodoDir, getRegistryPath } from "./paths";
-import { findList, readRegistry, upsertList } from "./todoRegistry";
+import { findList, readRegistry, removeList, upsertList } from "./todoRegistry";
 
 export async function listTodoLists(): Promise<TodoListSummary[]> {
   return readRegistry(getRegistryPath());
@@ -109,6 +109,15 @@ export async function toggleTodo(request: ToggleTodoRequest): Promise<TodoListDo
 export async function revealFile(listId: string): Promise<void> {
   const summary = await requireList(listId);
   shell.showItemInFolder(summary.filePath);
+}
+
+export async function removeTodoList(listId: string): Promise<TodoListSummary[]> {
+  const result = await removeList(getRegistryPath(), listId);
+  if (!result.removed) {
+    throw new AppError("LIST_NOT_FOUND", "没有找到这个 TodoList。");
+  }
+
+  return result.lists;
 }
 
 async function createManagedFile(name: string): Promise<string> {

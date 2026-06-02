@@ -20,6 +20,8 @@ persistence layer.
 | Registry invalid JSON | Return an empty list |
 | List not found | Throw `AppError("LIST_NOT_FOUND", ...)` |
 | File missing | Throw `AppError("FILE_NOT_FOUND", ...)` |
+| Remove existing list | Rewrite registry without deleting Markdown file |
+| Remove missing list | Throw `AppError("LIST_NOT_FOUND", ...)` |
 
 ## Migration Rule
 

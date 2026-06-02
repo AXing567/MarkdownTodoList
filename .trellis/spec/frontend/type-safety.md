@@ -22,6 +22,7 @@ type TodoApi = {
   readTodoList: (listId: string) => Promise<TodoListDocument>;
   addTodo: (request: AddTodoRequest) => Promise<TodoListDocument>;
   toggleTodo: (request: ToggleTodoRequest) => Promise<TodoListDocument>;
+  removeTodoList: (listId: string) => Promise<TodoListSummary[]>;
   revealFile: (listId: string) => Promise<void>;
 };
 ```

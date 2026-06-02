@@ -155,14 +155,43 @@ input {
   overflow: auto;
 }
 
+.list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: stretch;
+  gap: 6px;
+  border: 1px solid #cfd6e2;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.list-row:hover {
+  border-color: #8fa1bc;
+  background: #f8fafc;
+}
+
+.list-row.active {
+  color: #0f3f7a;
+  border-color: #8fb7e8;
+  background: #edf6ff;
+}
+
 .list-item {
   display: grid;
   justify-items: start;
   gap: 4px;
   width: 100%;
   min-height: 58px;
+  border: 0;
+  border-radius: 0;
   padding: 10px 12px;
   text-align: left;
+  background: transparent;
+}
+
+.list-item:hover {
+  border-color: transparent;
+  background: transparent;
 }
 
 .list-item span {
@@ -173,10 +202,16 @@ input {
   white-space: nowrap;
 }
 
-.list-item.active {
-  color: #0f3f7a;
-  border-color: #8fb7e8;
-  background: #edf6ff;
+.remove-list-button {
+  align-self: center;
+  margin-right: 6px;
+  color: #8a241f;
+}
+
+.remove-list-button:hover {
+  color: #681a16;
+  border-color: #efb0a9;
+  background: #fff4f2;
 }
 
 .empty-list,
