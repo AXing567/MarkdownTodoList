@@ -1,0 +1,56 @@
+{
+  "name": "markdown-todolist",
+  "version": "0.1.0",
+  "description": "A local Markdown-backed TodoList app.",
+  "main": "./out/main/index.js",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/run-with-electron-env.cjs electron-vite dev",
+    "build": "npm run typecheck && electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "package": "npm run build && node scripts/run-with-electron-env.cjs electron-builder --dir",
+    "dist": "npm run build && node scripts/run-with-electron-env.cjs electron-builder"
+  },
+  "build": {
+    "appId": "local.markdown-todolist",
+    "productName": "Markdown TodoList",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
+  "dependencies": {
+    "lucide-react": "^1.17.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@swc/core": "^1.15.40",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.1",
+    "vite": "^7.3.5",
+    "vitest": "^4.1.8"
+  }
+}

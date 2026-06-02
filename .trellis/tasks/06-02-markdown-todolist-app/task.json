@@ -1,0 +1,63 @@
+{
+  "id": "markdown-todolist-app",
+  "name": "markdown-todolist-app",
+  "title": "Develop Markdown TodoList App",
+  "description": "Build an Electron + React Markdown-backed TodoList app",
+  "status": "completed",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "AXing567",
+  "assignee": "AXing567",
+  "createdAt": "2026-06-02",
+  "completedAt": "2026-06-02",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "package.json",
+    "src/main/",
+    "src/preload/",
+    "src/renderer/",
+    "src/shared/",
+    "scripts/run-with-electron-env.cjs",
+    "README.md",
+    ".trellis/spec/backend/",
+    ".trellis/spec/frontend/"
+  ],
+  "notes": "Implemented Electron + React/Vite Markdown TodoList app. Dev server uses port 43157. Markdown persistence and IPC contracts are documented in specs.",
+  "meta": {}
+}

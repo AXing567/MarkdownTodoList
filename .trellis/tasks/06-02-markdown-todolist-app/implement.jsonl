@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "React component conventions for the new UI"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Backend IPC/file operation error handling"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Shared TypeScript contracts between renderer and preload"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Electron main process service structure"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Renderer state management for selected list and completed visibility"}

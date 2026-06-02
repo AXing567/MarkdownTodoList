@@ -1,0 +1,8 @@
+node_modules/
+out/
+release/
+dist/
+*.local
+*.tsbuildinfo
+data/todolist-registry.json
+data/todolists/*.md

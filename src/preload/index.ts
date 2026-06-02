@@ -1,0 +1,20 @@
+import { contextBridge, ipcRenderer } from "electron";
+import type {
+  AddTodoRequest,
+  CreateTodoListRequest,
+  TodoApi,
+  ToggleTodoRequest
+} from "../shared/todoTypes";
+
+const todoApi: TodoApi = {
+  listTodoLists: () => ipcRenderer.invoke("todo:list"),
+  createTodoList: (request: CreateTodoListRequest) =>
+    ipcRenderer.invoke("todo:create", request),
+  openTodoList: () => ipcRenderer.invoke("todo:open"),
+  readTodoList: (listId: string) => ipcRenderer.invoke("todo:read", listId),
+  addTodo: (request: AddTodoRequest) => ipcRenderer.invoke("todo:add", request),
+  toggleTodo: (request: ToggleTodoRequest) => ipcRenderer.invoke("todo:toggle", request),
+  revealFile: (listId: string) => ipcRenderer.invoke("todo:reveal", listId)
+};
+
+contextBridge.exposeInMainWorld("todoApi", todoApi);
