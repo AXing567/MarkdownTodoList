@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   type AddTodoRequest,
   type CreateTodoListRequest,
+  type DeleteTodoRequest,
   type TodoListDocument,
   type TodoListSummary,
   type ToggleTodoRequest,
@@ -15,6 +16,7 @@ import {
   createEmptyMarkdown,
   createListId,
   createUntitledFileName,
+  deleteTodoFromFile,
   deriveDefaultName,
   readTodoFile,
   setTodoCompletedInFile,
@@ -111,6 +113,13 @@ export async function toggleTodo(request: ToggleTodoRequest): Promise<TodoListDo
 export async function updateTodo(request: UpdateTodoRequest): Promise<TodoListDocument> {
   const summary = await requireList(request.listId);
   const todos = await updateTodoTextInFile(summary.filePath, request.todoId, request.text);
+  const updatedSummary = await touchSummary(summary);
+  return { ...updatedSummary, todos };
+}
+
+export async function deleteTodo(request: DeleteTodoRequest): Promise<TodoListDocument> {
+  const summary = await requireList(request.listId);
+  const todos = await deleteTodoFromFile(summary.filePath, request.todoId);
   const updatedSummary = await touchSummary(summary);
   return { ...updatedSummary, todos };
 }

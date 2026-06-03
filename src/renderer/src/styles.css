@@ -481,6 +481,34 @@ textarea {
   animation: todo-text-complete 1.05s ease-out both;
 }
 
+.todo-context-menu {
+  position: fixed;
+  z-index: 30;
+  width: 150px;
+  border: 1px solid #d2d9e5;
+  border-radius: 7px;
+  padding: 5px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(16 24 40 / 0.16);
+}
+
+.todo-context-menu-item {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  padding: 0 9px;
+  background: transparent;
+}
+
+.todo-context-menu-item:hover {
+  background: #fff4f2;
+}
+
+.todo-context-menu-item.danger {
+  color: #8a241f;
+}
+
 .check-button {
   width: 28px;
   min-width: 28px;

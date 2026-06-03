@@ -102,6 +102,29 @@ export async function updateTodoTextInFile(
   return parseMarkdown(nextContent);
 }
 
+export async function deleteTodoFromFile(filePath: string, todoId: string): Promise<TodoItem[]> {
+  const content = await readFile(filePath, "utf8");
+  const parsed = parseMarkdownWithLines(content);
+  let changed = false;
+
+  const nextLines = parsed.lines.flatMap((line) => {
+    if (line.todoId !== todoId) {
+      return [line.raw];
+    }
+
+    changed = true;
+    return [];
+  });
+
+  if (!changed) {
+    throw new AppError("TODO_NOT_FOUND", "没有找到对应的待办事项。");
+  }
+
+  const nextContent = normalizeTrailingNewline(nextLines.join("\n"));
+  await writeFile(filePath, nextContent, "utf8");
+  return parseMarkdown(nextContent);
+}
+
 export function deriveDefaultName(filePath: string): string {
   return basename(filePath).replace(/\.md$/i, "");
 }

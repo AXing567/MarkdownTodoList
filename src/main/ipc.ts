@@ -4,6 +4,7 @@ import { AppError, toErrorMessage } from "./errors";
 import {
   addTodo,
   createTodoList,
+  deleteTodo,
   listTodoLists,
   openTodoList,
   readTodoList,
@@ -26,6 +27,9 @@ export function registerIpcHandlers(): void {
   );
   ipcMain.handle("todo:update", (_event, request) =>
     withErrors(() => updateTodo(request))
+  );
+  ipcMain.handle("todo:delete", (_event, request) =>
+    withErrors(() => deleteTodo(request))
   );
   ipcMain.handle("todo:remove", (_event, listId) =>
     withErrors(() => removeTodoList(listId))

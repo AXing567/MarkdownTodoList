@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type {
   AddTodoRequest,
   CreateTodoListRequest,
+  DeleteTodoRequest,
   TodoApi,
   ToggleTodoRequest,
   UpdateTodoRequest
@@ -16,6 +17,7 @@ const todoApi: TodoApi = {
   addTodo: (request: AddTodoRequest) => ipcRenderer.invoke("todo:add", request),
   toggleTodo: (request: ToggleTodoRequest) => ipcRenderer.invoke("todo:toggle", request),
   updateTodo: (request: UpdateTodoRequest) => ipcRenderer.invoke("todo:update", request),
+  deleteTodo: (request: DeleteTodoRequest) => ipcRenderer.invoke("todo:delete", request),
   removeTodoList: (listId: string) => ipcRenderer.invoke("todo:remove", listId),
   revealFile: (listId: string) => ipcRenderer.invoke("todo:reveal", listId)
 };

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   addTodoToFile,
   createEmptyMarkdown,
+  deleteTodoFromFile,
   parseMarkdown,
   setTodoCompletedInFile,
   updateTodoTextInFile
@@ -68,6 +69,23 @@ describe("markdownTodo", () => {
     await updateTodoTextInFile(filePath, todo.id, "  新 内容  ");
 
     await expect(readFile(filePath, "utf8")).resolves.toBe("# P0\n- [x] 新 内容\n");
+  });
+
+  it("deletes only the matching todo line", async () => {
+    const filePath = await createTempTodoFile(
+      "# P0\n- [ ] 吃早餐\n- [x] 写代码\n\n# P1\n- [ ] 复盘\n"
+    );
+    const [, secondTodo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!secondTodo) {
+      throw new Error("Expected test todo to exist");
+    }
+
+    await deleteTodoFromFile(filePath, secondTodo.id);
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(
+      "# P0\n- [ ] 吃早餐\n\n# P1\n- [ ] 复盘\n"
+    );
   });
 });
 

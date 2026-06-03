@@ -23,6 +23,8 @@ npm run build
 Add or update Vitest coverage whenever Markdown format behavior changes.
 Todo text editing must preserve the checkbox completion marker and rewrite only
 the text portion of the Markdown task line.
+Todo deletion must remove only the matching Markdown task line and preserve the
+surrounding priority headings and unrelated todos.
 
 ## Review Checklist
 

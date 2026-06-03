@@ -44,6 +44,11 @@ export type UpdateTodoRequest = {
   text: string;
 };
 
+export type DeleteTodoRequest = {
+  listId: string;
+  todoId: string;
+};
+
 export type TodoApi = {
   listTodoLists: () => Promise<TodoListSummary[]>;
   createTodoList: (request: CreateTodoListRequest) => Promise<TodoListDocument>;
@@ -52,6 +57,7 @@ export type TodoApi = {
   addTodo: (request: AddTodoRequest) => Promise<TodoListDocument>;
   toggleTodo: (request: ToggleTodoRequest) => Promise<TodoListDocument>;
   updateTodo: (request: UpdateTodoRequest) => Promise<TodoListDocument>;
+  deleteTodo: (request: DeleteTodoRequest) => Promise<TodoListDocument>;
   removeTodoList: (listId: string) => Promise<TodoListSummary[]>;
   revealFile: (listId: string) => Promise<void>;
 };

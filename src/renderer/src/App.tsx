@@ -13,7 +13,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import type { MouseEvent, ReactElement } from "react";
 import {
   PRIORITIES,
   type Priority,
@@ -34,7 +34,18 @@ type EditingTodoState = {
   text: string;
 };
 
+type TodoContextMenuState = {
+  listId: string;
+  todo: TodoItem;
+  x: number;
+  y: number;
+};
+
 const completionEffectDurationMs = 1400;
+const todoContextMenuSize = {
+  width: 150,
+  height: 44
+};
 
 const emptyDrafts: DraftByPriority = {
   P0: "",
@@ -54,6 +65,7 @@ export function App(): ReactElement {
   const [newListName, setNewListName] = useState("");
   const [drafts, setDrafts] = useState<DraftByPriority>(emptyDrafts);
   const [editingTodo, setEditingTodo] = useState<EditingTodoState | null>(null);
+  const [todoContextMenu, setTodoContextMenu] = useState<TodoContextMenuState | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [status, setStatus] = useState<StatusState>({ kind: "loading", message: "正在载入" });
   const copyTimerRef = useRef<number | null>(null);
@@ -71,6 +83,34 @@ export function App(): ReactElement {
   useEffect(() => {
     void loadLists();
   }, []);
+
+  useEffect(() => {
+    if (!todoContextMenu) {
+      return;
+    }
+
+    function closeContextMenu(): void {
+      setTodoContextMenu(null);
+    }
+
+    function closeContextMenuOnEscape(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setTodoContextMenu(null);
+      }
+    }
+
+    window.addEventListener("click", closeContextMenu);
+    window.addEventListener("keydown", closeContextMenuOnEscape);
+    window.addEventListener("resize", closeContextMenu);
+    window.addEventListener("scroll", closeContextMenu, true);
+
+    return () => {
+      window.removeEventListener("click", closeContextMenu);
+      window.removeEventListener("keydown", closeContextMenuOnEscape);
+      window.removeEventListener("resize", closeContextMenu);
+      window.removeEventListener("scroll", closeContextMenu, true);
+    };
+  }, [todoContextMenu]);
 
   useEffect(() => {
     if (!editingTodo) {
@@ -257,6 +297,25 @@ export function App(): ReactElement {
     }, "已更新待办");
   }
 
+  async function deleteTodoItem(menuState: TodoContextMenuState): Promise<void> {
+    setTodoContextMenu(null);
+    clearCopyTimer();
+    stopCompletionEffect(menuState.listId, menuState.todo.id);
+
+    if (editingTodo?.todoId === menuState.todo.id) {
+      setEditingTodo(null);
+    }
+
+    await runAction(async () => {
+      const document = await window.todoApi.deleteTodo({
+        listId: menuState.listId,
+        todoId: menuState.todo.id
+      });
+      setActiveList(document);
+      await refreshListSummaries();
+    }, "已删除待办");
+  }
+
   async function revealActiveFile(): Promise<void> {
     if (!activeList) {
       return;
@@ -283,7 +342,28 @@ export function App(): ReactElement {
 
   function startEditingTodo(todo: TodoItem): void {
     clearCopyTimer();
+    setTodoContextMenu(null);
     setEditingTodo({ todoId: todo.id, text: todo.text });
+  }
+
+  function openTodoContextMenu(
+    event: MouseEvent<HTMLLIElement>,
+    listId: string,
+    todo: TodoItem
+  ): void {
+    if (event.target instanceof HTMLElement && event.target.closest(".todo-edit-input")) {
+      return;
+    }
+
+    event.preventDefault();
+    clearCopyTimer();
+
+    setTodoContextMenu({
+      listId,
+      todo,
+      x: clampMenuPosition(event.clientX, window.innerWidth, todoContextMenuSize.width),
+      y: clampMenuPosition(event.clientY, window.innerHeight, todoContextMenuSize.height)
+    });
   }
 
   function clearCopyTimer(): void {
@@ -519,7 +599,11 @@ export function App(): ReactElement {
                       .filter(Boolean)
                       .join(" ");
                     return (
-                      <li key={todo.id} className={todoClassName}>
+                      <li
+                        key={todo.id}
+                        className={todoClassName}
+                        onContextMenu={(event) => openTodoContextMenu(event, activeList.id, todo)}
+                      >
                         <button
                           className="check-button"
                           type="button"
@@ -580,6 +664,26 @@ export function App(): ReactElement {
             <p>创建项目内 Markdown 文件，或选择电脑上的保存位置。</p>
           </div>
         )}
+
+        {todoContextMenu ? (
+          <div
+            className="todo-context-menu"
+            style={{ left: todoContextMenu.x, top: todoContextMenu.y }}
+            role="menu"
+            aria-label="待办操作"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="todo-context-menu-item danger"
+              type="button"
+              role="menuitem"
+              onClick={() => void deleteTodoItem(todoContextMenu)}
+            >
+              <Trash2 size={15} />
+              删除待办
+            </button>
+          </div>
+        ) : null}
       </section>
     </main>
   );
@@ -625,4 +729,9 @@ function resizeTodoEditTextarea(textarea: HTMLTextAreaElement): void {
 
 function createTodoEffectKey(listId: string, todoId: string): string {
   return `${listId}:${todoId}`;
+}
+
+function clampMenuPosition(position: number, viewportSize: number, menuSize: number): number {
+  const margin = 8;
+  return Math.max(margin, Math.min(position, viewportSize - menuSize - margin));
 }
