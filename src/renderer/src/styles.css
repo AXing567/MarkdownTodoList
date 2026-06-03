@@ -20,7 +20,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -44,19 +45,31 @@ button:hover {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+textarea:focus-visible {
   outline: 2px solid #2f80ed;
   outline-offset: 2px;
 }
 
-input {
+input,
+textarea {
   width: 100%;
-  min-height: 38px;
   border: 1px solid #cfd6e2;
   border-radius: 7px;
-  padding: 0 11px;
   color: #172033;
   background: #ffffff;
+}
+
+input {
+  min-height: 38px;
+  padding: 0 11px;
+}
+
+textarea {
+  min-height: 92px;
+  padding: 10px 11px;
+  line-height: 1.5;
+  resize: vertical;
 }
 
 .app-shell {
@@ -365,6 +378,12 @@ input {
   background: #fbfcfe;
 }
 
+.todo.editing {
+  gap: 10px;
+  padding: 10px;
+  background: #f7fbff;
+}
+
 .todo-text-button {
   justify-content: space-between;
   gap: 10px;
@@ -393,10 +412,11 @@ input {
 }
 
 .todo-edit-input {
-  min-height: 32px;
-  padding: 0 8px;
+  min-height: 150px;
+  max-height: 320px;
   border-color: #8fb7e8;
   background: #ffffff;
+  overflow-y: auto;
 }
 
 .todo.completed .todo-text-button span {

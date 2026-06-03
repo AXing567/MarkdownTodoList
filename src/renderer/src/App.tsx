@@ -55,6 +55,7 @@ export function App(): ReactElement {
   const [showCompleted, setShowCompleted] = useState(false);
   const [status, setStatus] = useState<StatusState>({ kind: "loading", message: "正在载入" });
   const copyTimerRef = useRef<number | null>(null);
+  const editingTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -65,6 +66,30 @@ export function App(): ReactElement {
   useEffect(() => {
     void loadLists();
   }, []);
+
+  useEffect(() => {
+    if (!editingTodo) {
+      return;
+    }
+
+    const textarea = editingTextareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    resizeTodoEditTextarea(textarea);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }, [editingTodo?.todoId]);
+
+  useEffect(() => {
+    const textarea = editingTextareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    resizeTodoEditTextarea(textarea);
+  }, [editingTodo?.text]);
 
   const visibleTodosByPriority = useMemo(() => {
     const grouped = new Map<Priority, TodoItem[]>();
@@ -413,8 +438,15 @@ export function App(): ReactElement {
                 <ul className="todo-list">
                   {(visibleTodosByPriority.get(priority) ?? []).map((todo) => {
                     const isEditing = editingTodo?.todoId === todo.id;
+                    const todoClassName = [
+                      "todo",
+                      todo.completed ? "completed" : "",
+                      isEditing ? "editing" : ""
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
                     return (
-                      <li key={todo.id} className={todo.completed ? "todo completed" : "todo"}>
+                      <li key={todo.id} className={todoClassName}>
                         <button
                           className="check-button"
                           type="button"
@@ -424,17 +456,19 @@ export function App(): ReactElement {
                           {todo.completed ? <Check size={16} /> : <Circle size={16} />}
                         </button>
                         {isEditing ? (
-                          <input
+                          <textarea
+                            ref={editingTextareaRef}
                             className="todo-edit-input"
                             value={editingTodo.text}
-                            autoFocus
+                            rows={6}
                             aria-label="编辑待办内容"
-                            onChange={(event) =>
-                              setEditingTodo({ todoId: todo.id, text: event.target.value })
-                            }
+                            onChange={(event) => {
+                              resizeTodoEditTextarea(event.currentTarget);
+                              setEditingTodo({ todoId: todo.id, text: event.target.value });
+                            }}
                             onBlur={() => void saveTodoEdit(todo, editingTodo.text)}
                             onKeyDown={(event) => {
-                              if (event.key === "Enter") {
+                              if (event.key === "Enter" && !event.shiftKey) {
                                 event.preventDefault();
                                 void saveTodoEdit(todo, editingTodo.text);
                               }
@@ -509,4 +543,9 @@ function readApiError(error: unknown): string {
   }
 
   return error.message || "操作失败";
+}
+
+function resizeTodoEditTextarea(textarea: HTMLTextAreaElement): void {
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 320)}px`;
 }
