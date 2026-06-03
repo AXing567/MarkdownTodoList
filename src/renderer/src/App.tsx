@@ -34,6 +34,8 @@ type EditingTodoState = {
   text: string;
 };
 
+const completionEffectDurationMs = 1400;
+
 const emptyDrafts: DraftByPriority = {
   P0: "",
   P1: "",
@@ -56,10 +58,13 @@ export function App(): ReactElement {
   const [status, setStatus] = useState<StatusState>({ kind: "loading", message: "正在载入" });
   const copyTimerRef = useRef<number | null>(null);
   const editingTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const completionEffectTimersRef = useRef<Map<string, number>>(new Map());
+  const [completionEffectKeys, setCompletionEffectKeys] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     return () => {
       clearCopyTimer();
+      clearCompletionEffectTimers();
     };
   }, []);
 
@@ -97,15 +102,21 @@ export function App(): ReactElement {
       grouped.set(priority, []);
     }
 
+    const activeListId = activeList?.id;
+
     for (const todo of activeList?.todos ?? []) {
-      if (!showCompleted && todo.completed) {
+      const isCompletionEffectVisible = activeListId
+        ? completionEffectKeys.has(createTodoEffectKey(activeListId, todo.id))
+        : false;
+
+      if (!showCompleted && todo.completed && !isCompletionEffectVisible) {
         continue;
       }
       grouped.get(todo.priority)?.push(todo);
     }
 
     return grouped;
-  }, [activeList, showCompleted]);
+  }, [activeList, completionEffectKeys, showCompleted]);
 
   const completedCount = activeList?.todos.filter((todo) => todo.completed).length ?? 0;
   const openCount = activeList ? activeList.todos.length - completedCount : 0;
@@ -208,6 +219,11 @@ export function App(): ReactElement {
         todoId: todo.id,
         completed: !todo.completed
       });
+      if (todo.completed) {
+        stopCompletionEffect(activeList.id, todo.id);
+      } else {
+        startCompletionEffect(activeList.id, todo.id);
+      }
       setActiveList(document);
       await refreshListSummaries();
     }, todo.completed ? "已恢复待办" : "已完成待办");
@@ -277,6 +293,58 @@ export function App(): ReactElement {
 
     window.clearTimeout(copyTimerRef.current);
     copyTimerRef.current = null;
+  }
+
+  function startCompletionEffect(listId: string, todoId: string): void {
+    const effectKey = createTodoEffectKey(listId, todoId);
+    stopCompletionEffect(listId, todoId);
+
+    setCompletionEffectKeys((current) => {
+      const next = new Set(current);
+      next.add(effectKey);
+      return next;
+    });
+
+    const timerId = window.setTimeout(() => {
+      completionEffectTimersRef.current.delete(effectKey);
+      setCompletionEffectKeys((current) => {
+        if (!current.has(effectKey)) {
+          return current;
+        }
+
+        const next = new Set(current);
+        next.delete(effectKey);
+        return next;
+      });
+    }, completionEffectDurationMs);
+
+    completionEffectTimersRef.current.set(effectKey, timerId);
+  }
+
+  function stopCompletionEffect(listId: string, todoId: string): void {
+    const effectKey = createTodoEffectKey(listId, todoId);
+    const timerId = completionEffectTimersRef.current.get(effectKey);
+    if (timerId) {
+      window.clearTimeout(timerId);
+      completionEffectTimersRef.current.delete(effectKey);
+    }
+
+    setCompletionEffectKeys((current) => {
+      if (!current.has(effectKey)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.delete(effectKey);
+      return next;
+    });
+  }
+
+  function clearCompletionEffectTimers(): void {
+    for (const timerId of completionEffectTimersRef.current.values()) {
+      window.clearTimeout(timerId);
+    }
+    completionEffectTimersRef.current.clear();
   }
 
   async function refreshListSummaries(): Promise<void> {
@@ -438,10 +506,15 @@ export function App(): ReactElement {
                 <ul className="todo-list">
                   {(visibleTodosByPriority.get(priority) ?? []).map((todo) => {
                     const isEditing = editingTodo?.todoId === todo.id;
+                    const isCompletionEffectActive =
+                      Boolean(activeList) &&
+                      todo.completed &&
+                      completionEffectKeys.has(createTodoEffectKey(activeList.id, todo.id));
                     const todoClassName = [
                       "todo",
                       todo.completed ? "completed" : "",
-                      isEditing ? "editing" : ""
+                      isEditing ? "editing" : "",
+                      isCompletionEffectActive ? "completion-effect" : ""
                     ]
                       .filter(Boolean)
                       .join(" ");
@@ -548,4 +621,8 @@ function readApiError(error: unknown): string {
 function resizeTodoEditTextarea(textarea: HTMLTextAreaElement): void {
   textarea.style.height = "auto";
   textarea.style.height = `${Math.min(textarea.scrollHeight, 320)}px`;
+}
+
+function createTodoEffectKey(listId: string, todoId: string): string {
+  return `${listId}:${todoId}`;
 }

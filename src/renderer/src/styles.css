@@ -367,6 +367,7 @@ textarea {
 }
 
 .todo {
+  position: relative;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: start;
@@ -376,6 +377,7 @@ textarea {
   border-radius: 7px;
   padding: 7px;
   background: #fbfcfe;
+  overflow: hidden;
 }
 
 .todo.editing {
@@ -424,6 +426,61 @@ textarea {
   text-decoration: line-through;
 }
 
+.todo.completion-effect {
+  border-color: #9dd8cc;
+  background: #f3fffb;
+  animation: todo-complete-settle 1.4s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.todo.completion-effect::before,
+.todo.completion-effect::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.todo.completion-effect::before {
+  inset: 0;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 30%,
+      rgb(255 255 255 / 0.8) 43%,
+      rgb(157 216 204 / 0.5) 50%,
+      transparent 62%,
+      transparent 100%
+    );
+  transform: translateX(-115%);
+  animation: todo-complete-sheen 0.95s ease-out both;
+}
+
+.todo.completion-effect::after {
+  left: 44px;
+  right: 12px;
+  top: 5px;
+  height: 72px;
+  background:
+    linear-gradient(35deg, #f6c85f 0 100%) 4% 28% / 16px 4px no-repeat,
+    linear-gradient(-22deg, #5cc8a7 0 100%) 18% 10% / 13px 4px no-repeat,
+    linear-gradient(18deg, #7aa7ff 0 100%) 38% 22% / 15px 4px no-repeat,
+    linear-gradient(-38deg, #e8836f 0 100%) 58% 12% / 12px 4px no-repeat,
+    linear-gradient(28deg, #f2a65a 0 100%) 74% 30% / 14px 4px no-repeat,
+    linear-gradient(-18deg, #5cc8a7 0 100%) 90% 16% / 12px 4px no-repeat,
+    linear-gradient(90deg, #7aa7ff 0 100%) 28% 56% / 10px 3px no-repeat,
+    linear-gradient(-28deg, #f6c85f 0 100%) 66% 62% / 11px 3px no-repeat;
+  opacity: 0;
+  animation: todo-complete-papers 1.2s ease-out both;
+}
+
+.todo.completion-effect .check-button {
+  animation: check-pop 0.64s cubic-bezier(0.2, 1.35, 0.28, 1) both;
+}
+
+.todo.completion-effect .todo-text-button {
+  animation: todo-text-complete 1.05s ease-out both;
+}
+
 .check-button {
   width: 28px;
   min-width: 28px;
@@ -454,6 +511,104 @@ textarea {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes todo-complete-settle {
+  0% {
+    border-color: #78ccb8;
+    box-shadow: 0 0 0 0 rgb(92 200 167 / 0.38);
+    transform: translateY(0) scale(1);
+  }
+
+  28% {
+    box-shadow: 0 12px 28px rgb(92 200 167 / 0.16);
+    transform: translateY(-1px) scale(1.015);
+  }
+
+  100% {
+    box-shadow: none;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes todo-complete-sheen {
+  0% {
+    opacity: 0;
+    transform: translateX(-115%);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(115%);
+  }
+}
+
+@keyframes todo-complete-papers {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.72) rotate(-4deg);
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  72% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-38px) scale(1.08) rotate(10deg);
+  }
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.86);
+  }
+
+  48% {
+    color: #ffffff;
+    border-color: #22a783;
+    background: #22a783;
+    transform: scale(1.22);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes todo-text-complete {
+  0% {
+    transform: translateX(0);
+  }
+
+  24% {
+    transform: translateX(3px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo.completion-effect,
+  .todo.completion-effect .check-button,
+  .todo.completion-effect .todo-text-button {
+    animation: none;
+  }
+
+  .todo.completion-effect::before,
+  .todo.completion-effect::after {
+    display: none;
   }
 }
 
