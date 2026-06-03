@@ -11,6 +11,13 @@ persistence layer.
 * Packaged apps store managed files under Electron `userData`.
 * Registry entries match `TodoListSummary` from `src/shared/todoTypes.ts`.
 * Registry path is resolved by `getRegistryPath()` in `src/main/paths.ts`.
+* Multiline todo text is stored as a Markdown task line followed by indented
+  continuation lines:
+
+```md
+- [ ] 第一行
+  第二行
+```
 
 ## Validation & Error Matrix
 

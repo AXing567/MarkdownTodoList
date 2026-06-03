@@ -350,9 +350,15 @@ textarea {
 .add-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: start;
   gap: 8px;
   padding: 14px 16px;
   border-bottom: 1px solid #edf1f6;
+}
+
+.todo-draft-input {
+  min-height: 78px;
+  max-height: 180px;
 }
 
 .todo-list {
@@ -406,6 +412,7 @@ textarea {
   min-width: 0;
   overflow-wrap: anywhere;
   line-height: 1.45;
+  white-space: pre-wrap;
 }
 
 .todo-text-button svg {

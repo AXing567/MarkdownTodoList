@@ -33,6 +33,18 @@ describe("markdownTodo", () => {
     ]);
   });
 
+  it("parses indented continuation lines as multiline todo text", () => {
+    const todos = parseMarkdown("# P0\n- [ ] 第一行\n  第二行\n  第三行\n\n# P1\n");
+
+    expect(todos).toEqual([
+      expect.objectContaining({
+        priority: "P0",
+        text: "第一行\n第二行\n第三行",
+        completed: false
+      })
+    ]);
+  });
+
   it("adds todos under the target priority and preserves markdown sections", async () => {
     const filePath = await createTempTodoFile("# P0\n\n# P1\n\n# P2\n");
 
@@ -40,6 +52,16 @@ describe("markdownTodo", () => {
 
     await expect(readFile(filePath, "utf8")).resolves.toBe(
       "# P0\n\n# P1\n- [ ] 处理 邮件\n\n# P2\n"
+    );
+  });
+
+  it("adds multiline todos using markdown continuation lines", async () => {
+    const filePath = await createTempTodoFile("# P0\n\n# P1\n\n# P2\n");
+
+    await addTodoToFile(filePath, "P1", "  第一行\n  第二行  \n\n第三行  ");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(
+      "# P0\n\n# P1\n- [ ] 第一行\n  第二行\n  \n  第三行\n\n# P2\n"
     );
   });
 
@@ -58,6 +80,21 @@ describe("markdownTodo", () => {
     );
   });
 
+  it("toggles multiline todos while preserving continuation lines", async () => {
+    const filePath = await createTempTodoFile("# P0\n- [ ] 第一行\n  第二行\n  第三行\n");
+    const [todo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!todo) {
+      throw new Error("Expected test todo to exist");
+    }
+
+    await setTodoCompletedInFile(filePath, todo.id, true);
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(
+      "# P0\n- [x] 第一行\n  第二行\n  第三行\n"
+    );
+  });
+
   it("updates todo text while preserving completion state", async () => {
     const filePath = await createTempTodoFile("# P0\n- [x] 旧内容\n");
     const [todo] = parseMarkdown(await readFile(filePath, "utf8"));
@@ -69,6 +106,21 @@ describe("markdownTodo", () => {
     await updateTodoTextInFile(filePath, todo.id, "  新 内容  ");
 
     await expect(readFile(filePath, "utf8")).resolves.toBe("# P0\n- [x] 新 内容\n");
+  });
+
+  it("updates multiline todo text while replacing old continuation lines", async () => {
+    const filePath = await createTempTodoFile("# P0\n- [x] 旧内容\n  旧第二行\n\n# P1\n");
+    const [todo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!todo) {
+      throw new Error("Expected test todo to exist");
+    }
+
+    await updateTodoTextInFile(filePath, todo.id, "新第一行\n 新第二行 \n新第三行");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(
+      "# P0\n- [x] 新第一行\n  新第二行\n  新第三行\n\n# P1\n"
+    );
   });
 
   it("deletes only the matching todo line", async () => {
@@ -85,6 +137,23 @@ describe("markdownTodo", () => {
 
     await expect(readFile(filePath, "utf8")).resolves.toBe(
       "# P0\n- [ ] 吃早餐\n\n# P1\n- [ ] 复盘\n"
+    );
+  });
+
+  it("deletes multiline todo continuation lines", async () => {
+    const filePath = await createTempTodoFile(
+      "# P0\n- [ ] 保留\n- [x] 删除第一行\n  删除第二行\n  删除第三行\n- [ ] 也保留\n"
+    );
+    const [, secondTodo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!secondTodo) {
+      throw new Error("Expected test todo to exist");
+    }
+
+    await deleteTodoFromFile(filePath, secondTodo.id);
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(
+      "# P0\n- [ ] 保留\n- [ ] 也保留\n"
     );
   });
 });

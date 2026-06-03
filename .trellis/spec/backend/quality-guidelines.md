@@ -25,6 +25,8 @@ Todo text editing must preserve the checkbox completion marker and rewrite only
 the text portion of the Markdown task line.
 Todo deletion must remove only the matching Markdown task line and preserve the
 surrounding priority headings and unrelated todos.
+Multiline todo tests must cover parsing, adding, toggling, editing, and deleting
+the indented continuation lines that belong to the same todo.
 
 ## Review Checklist
 

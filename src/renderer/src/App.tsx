@@ -571,12 +571,21 @@ export function App(): ReactElement {
                     void addTodo(priority);
                   }}
                 >
-                  <input
+                  <textarea
+                    className="todo-draft-input"
                     value={drafts[priority]}
                     onChange={(event) =>
                       setDrafts((current) => ({ ...current, [priority]: event.target.value }))
                     }
+                    rows={3}
                     placeholder={`添加 ${priority} 待办`}
+                    aria-label={`添加 ${priority} 待办`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && event.ctrlKey) {
+                        event.preventDefault();
+                        void addTodo(priority);
+                      }
+                    }}
                   />
                   <button className="icon-button" type="submit" title="添加" aria-label="添加待办">
                     <Plus size={18} />
@@ -625,7 +634,7 @@ export function App(): ReactElement {
                             }}
                             onBlur={() => void saveTodoEdit(todo, editingTodo.text)}
                             onKeyDown={(event) => {
-                              if (event.key === "Enter" && !event.shiftKey) {
+                              if (event.key === "Enter" && event.ctrlKey) {
                                 event.preventDefault();
                                 void saveTodoEdit(todo, editingTodo.text);
                               }

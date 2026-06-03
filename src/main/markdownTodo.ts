@@ -8,6 +8,7 @@ type ParsedLine = {
   raw: string;
   priority: Priority | null;
   todoId: string | null;
+  todoLinePart: "task" | "continuation" | null;
 };
 
 type ParsedMarkdown = {
@@ -17,6 +18,7 @@ type ParsedMarkdown = {
 
 const headingPattern = /^#\s+(P[0-2])\s*$/;
 const todoPattern = /^(\s*)-\s+\[([ xX])]\s+(.*)$/;
+const continuationPattern = /^ {2,}(.*)$/;
 
 export function createEmptyMarkdown(): string {
   return PRIORITIES.map((priority) => `# ${priority}\n`).join("\n").trimEnd() + "\n";
@@ -61,6 +63,10 @@ export async function setTodoCompletedInFile(
       return line.raw;
     }
 
+    if (line.todoLinePart === "continuation") {
+      return line.raw;
+    }
+
     changed = true;
     return line.raw.replace(todoPattern, `$1- [${completed ? "x" : " "}] $3`);
   });
@@ -84,13 +90,22 @@ export async function updateTodoTextInFile(
   const parsed = parseMarkdownWithLines(content);
   let changed = false;
 
-  const nextLines = parsed.lines.map((line) => {
+  const nextLines = parsed.lines.flatMap((line) => {
     if (line.todoId !== todoId) {
-      return line.raw;
+      return [line.raw];
+    }
+
+    if (line.todoLinePart === "continuation") {
+      return [];
     }
 
     changed = true;
-    return line.raw.replace(todoPattern, `$1- [$2] ${normalizedText}`);
+    const todoMatch = line.raw.match(todoPattern);
+    if (!todoMatch) {
+      return [line.raw];
+    }
+
+    return createTodoMarkdownLines(todoMatch[2] ?? " ", normalizedText, todoMatch[1] ?? "");
   });
 
   if (!changed) {
@@ -112,7 +127,9 @@ export async function deleteTodoFromFile(filePath: string, todoId: string): Prom
       return [line.raw];
     }
 
-    changed = true;
+    if (line.todoLinePart === "task") {
+      changed = true;
+    }
     return [];
   });
 
@@ -141,18 +158,41 @@ function parseMarkdownWithLines(content: string): ParsedMarkdown {
   let currentPriority: Priority | null = null;
   const occurrenceByStableKey = new Map<string, number>();
 
-  for (const raw of sourceLines) {
+  for (let index = 0; index < sourceLines.length; index += 1) {
+    const raw = sourceLines[index] ?? "";
     const headingMatch = raw.match(headingPattern);
     if (headingMatch?.[1] && isPriority(headingMatch[1])) {
       currentPriority = headingMatch[1];
-      lines.push({ raw, priority: currentPriority, todoId: null });
+      lines.push({ raw, priority: currentPriority, todoId: null, todoLinePart: null });
+      continue;
+    }
+
+    const previousLine = lines.at(-1);
+    const continuationMatch = raw.match(continuationPattern);
+    if (continuationMatch && previousLine?.todoId && previousLine.priority === currentPriority) {
+      lines.push({
+        raw,
+        priority: currentPriority,
+        todoId: previousLine.todoId,
+        todoLinePart: "continuation"
+      });
       continue;
     }
 
     const todoMatch = raw.match(todoPattern);
     if (todoMatch && currentPriority) {
       const completedMark = todoMatch[2] ?? " ";
-      const text = todoMatch[3]?.trim() ?? "";
+      const textLines = [todoMatch[3]?.trim() ?? ""];
+      for (let nextIndex = index + 1; nextIndex < sourceLines.length; nextIndex += 1) {
+        const nextRaw = sourceLines[nextIndex] ?? "";
+        const continuationMatch = nextRaw.match(continuationPattern);
+        if (!continuationMatch) {
+          break;
+        }
+
+        textLines.push(continuationMatch[1]?.trimEnd() ?? "");
+      }
+      const text = textLines.join("\n");
       const stableKey = `${currentPriority}:${text}`;
       const occurrence = occurrenceByStableKey.get(stableKey) ?? 0;
       occurrenceByStableKey.set(stableKey, occurrence + 1);
@@ -164,11 +204,11 @@ function parseMarkdownWithLines(content: string): ParsedMarkdown {
         text,
         completed: completedMark.toLowerCase() === "x"
       });
-      lines.push({ raw, priority: currentPriority, todoId });
+      lines.push({ raw, priority: currentPriority, todoId, todoLinePart: "task" });
       continue;
     }
 
-    lines.push({ raw, priority: currentPriority, todoId: null });
+    lines.push({ raw, priority: currentPriority, todoId: null, todoLinePart: null });
   }
 
   return { lines, todos };
@@ -196,7 +236,7 @@ function insertTodo(content: string, priority: Priority, text: string): string {
     insertAt -= 1;
   }
 
-  lines.splice(insertAt, 0, `- [ ] ${text}`);
+  lines.splice(insertAt, 0, ...createTodoMarkdownLines(" ", text));
   return normalizeTrailingNewline(lines.join("\n"));
 }
 
@@ -216,7 +256,13 @@ function ensurePrioritySections(content: string): string {
 }
 
 function normalizeTodoText(text: string): string {
-  const normalized = text.trim().replace(/\s+/g, " ");
+  const normalized = text
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.trim().replace(/\s+/g, " "))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   if (!normalized) {
     throw new AppError("EMPTY_TODO", "待办内容不能为空。");
   }
@@ -233,6 +279,14 @@ function createTodoId(priority: Priority, text: string, occurrence: number): str
 
 function normalizeTrailingNewline(content: string): string {
   return content.replace(/\s*$/u, "\n");
+}
+
+function createTodoMarkdownLines(completedMark: string, text: string, indent = ""): string[] {
+  const [firstLine = "", ...restLines] = text.split("\n");
+  return [
+    `${indent}- [${completedMark}] ${firstLine}`,
+    ...restLines.map((line) => `${indent}  ${line}`)
+  ];
 }
 
 function isPriority(value: string): value is Priority {
