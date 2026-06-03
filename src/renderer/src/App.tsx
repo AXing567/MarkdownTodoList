@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Trash2
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import {
   PRIORITIES,
@@ -28,6 +28,11 @@ type StatusState = {
 };
 
 type DraftByPriority = Record<Priority, string>;
+
+type EditingTodoState = {
+  todoId: string;
+  text: string;
+};
 
 const emptyDrafts: DraftByPriority = {
   P0: "",
@@ -46,8 +51,16 @@ export function App(): ReactElement {
   const [activeList, setActiveList] = useState<TodoListDocument | null>(null);
   const [newListName, setNewListName] = useState("");
   const [drafts, setDrafts] = useState<DraftByPriority>(emptyDrafts);
+  const [editingTodo, setEditingTodo] = useState<EditingTodoState | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [status, setStatus] = useState<StatusState>({ kind: "loading", message: "正在载入" });
+  const copyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      clearCopyTimer();
+    };
+  }, []);
 
   useEffect(() => {
     void loadLists();
@@ -175,6 +188,34 @@ export function App(): ReactElement {
     }, todo.completed ? "已恢复待办" : "已完成待办");
   }
 
+  async function saveTodoEdit(todo: TodoItem, text: string): Promise<void> {
+    if (!activeList) {
+      return;
+    }
+
+    const nextText = text.trim();
+    if (nextText === todo.text) {
+      setEditingTodo(null);
+      return;
+    }
+
+    if (!nextText) {
+      setStatus({ kind: "error", message: "待办内容不能为空" });
+      return;
+    }
+
+    await runAction(async () => {
+      const document = await window.todoApi.updateTodo({
+        listId: activeList.id,
+        todoId: todo.id,
+        text: nextText
+      });
+      setActiveList(document);
+      setEditingTodo(null);
+      await refreshListSummaries();
+    }, "已更新待办");
+  }
+
   async function revealActiveFile(): Promise<void> {
     if (!activeList) {
       return;
@@ -189,6 +230,28 @@ export function App(): ReactElement {
     await runAction(async () => {
       await navigator.clipboard.writeText(text);
     }, "已复制待办内容");
+  }
+
+  function scheduleCopyTodoText(text: string): void {
+    clearCopyTimer();
+    copyTimerRef.current = window.setTimeout(() => {
+      copyTimerRef.current = null;
+      void copyTodoText(text);
+    }, 180);
+  }
+
+  function startEditingTodo(todo: TodoItem): void {
+    clearCopyTimer();
+    setEditingTodo({ todoId: todo.id, text: todo.text });
+  }
+
+  function clearCopyTimer(): void {
+    if (copyTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = null;
   }
 
   async function refreshListSummaries(): Promise<void> {
@@ -348,28 +411,54 @@ export function App(): ReactElement {
                 </form>
 
                 <ul className="todo-list">
-                  {(visibleTodosByPriority.get(priority) ?? []).map((todo) => (
-                    <li key={todo.id} className={todo.completed ? "todo completed" : "todo"}>
-                      <button
-                        className="check-button"
-                        type="button"
-                        aria-label={todo.completed ? "标记为未完成" : "标记为完成"}
-                        onClick={() => void toggleTodo(todo)}
-                      >
-                        {todo.completed ? <Check size={16} /> : <Circle size={16} />}
-                      </button>
-                      <button
-                        className="todo-text-button"
-                        type="button"
-                        title="复制待办内容"
-                        aria-label={`复制待办内容：${todo.text}`}
-                        onClick={() => void copyTodoText(todo.text)}
-                      >
-                        <span>{todo.text}</span>
-                        <Clipboard size={14} />
-                      </button>
-                    </li>
-                  ))}
+                  {(visibleTodosByPriority.get(priority) ?? []).map((todo) => {
+                    const isEditing = editingTodo?.todoId === todo.id;
+                    return (
+                      <li key={todo.id} className={todo.completed ? "todo completed" : "todo"}>
+                        <button
+                          className="check-button"
+                          type="button"
+                          aria-label={todo.completed ? "标记为未完成" : "标记为完成"}
+                          onClick={() => void toggleTodo(todo)}
+                        >
+                          {todo.completed ? <Check size={16} /> : <Circle size={16} />}
+                        </button>
+                        {isEditing ? (
+                          <input
+                            className="todo-edit-input"
+                            value={editingTodo.text}
+                            autoFocus
+                            aria-label="编辑待办内容"
+                            onChange={(event) =>
+                              setEditingTodo({ todoId: todo.id, text: event.target.value })
+                            }
+                            onBlur={() => void saveTodoEdit(todo, editingTodo.text)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                void saveTodoEdit(todo, editingTodo.text);
+                              }
+                              if (event.key === "Escape") {
+                                setEditingTodo(null);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <button
+                            className="todo-text-button"
+                            type="button"
+                            title="单击复制，双击编辑"
+                            aria-label={`复制或编辑待办内容：${todo.text}`}
+                            onClick={() => scheduleCopyTodoText(todo.text)}
+                            onDoubleClick={() => startEditingTodo(todo)}
+                          >
+                            <span>{todo.text}</span>
+                            <Clipboard size={14} />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
                   {(visibleTodosByPriority.get(priority) ?? []).length === 0 ? (
                     <li className="empty-todos">暂无待办</li>
                   ) : null}

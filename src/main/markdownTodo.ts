@@ -74,6 +74,34 @@ export async function setTodoCompletedInFile(
   return parseMarkdown(nextContent);
 }
 
+export async function updateTodoTextInFile(
+  filePath: string,
+  todoId: string,
+  text: string
+): Promise<TodoItem[]> {
+  const normalizedText = normalizeTodoText(text);
+  const content = await readFile(filePath, "utf8");
+  const parsed = parseMarkdownWithLines(content);
+  let changed = false;
+
+  const nextLines = parsed.lines.map((line) => {
+    if (line.todoId !== todoId) {
+      return line.raw;
+    }
+
+    changed = true;
+    return line.raw.replace(todoPattern, `$1- [$2] ${normalizedText}`);
+  });
+
+  if (!changed) {
+    throw new AppError("TODO_NOT_FOUND", "没有找到对应的待办事项。");
+  }
+
+  const nextContent = normalizeTrailingNewline(nextLines.join("\n"));
+  await writeFile(filePath, nextContent, "utf8");
+  return parseMarkdown(nextContent);
+}
+
 export function deriveDefaultName(filePath: string): string {
   return basename(filePath).replace(/\.md$/i, "");
 }

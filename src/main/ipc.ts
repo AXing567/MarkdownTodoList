@@ -9,7 +9,8 @@ import {
   readTodoList,
   removeTodoList,
   revealFile,
-  toggleTodo
+  toggleTodo,
+  updateTodo
 } from "./todoService";
 
 export function registerIpcHandlers(): void {
@@ -22,6 +23,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle("todo:add", (_event, request) => withErrors(() => addTodo(request)));
   ipcMain.handle("todo:toggle", (_event, request) =>
     withErrors(() => toggleTodo(request))
+  );
+  ipcMain.handle("todo:update", (_event, request) =>
+    withErrors(() => updateTodo(request))
   );
   ipcMain.handle("todo:remove", (_event, listId) =>
     withErrors(() => removeTodoList(listId))

@@ -392,6 +392,13 @@ input {
   color: #8a94a6;
 }
 
+.todo-edit-input {
+  min-height: 32px;
+  padding: 0 8px;
+  border-color: #8fb7e8;
+  background: #ffffff;
+}
+
 .todo.completed .todo-text-button span {
   color: #8a94a6;
   text-decoration: line-through;

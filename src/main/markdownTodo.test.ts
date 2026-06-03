@@ -6,7 +6,8 @@ import {
   addTodoToFile,
   createEmptyMarkdown,
   parseMarkdown,
-  setTodoCompletedInFile
+  setTodoCompletedInFile,
+  updateTodoTextInFile
 } from "./markdownTodo";
 
 let tempDirs: string[] = [];
@@ -54,6 +55,19 @@ describe("markdownTodo", () => {
     await expect(readFile(filePath, "utf8")).resolves.toBe(
       "# P0\n- [x] 吃早餐\n\n# P1\n- [ ] 吃早餐\n"
     );
+  });
+
+  it("updates todo text while preserving completion state", async () => {
+    const filePath = await createTempTodoFile("# P0\n- [x] 旧内容\n");
+    const [todo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!todo) {
+      throw new Error("Expected test todo to exist");
+    }
+
+    await updateTodoTextInFile(filePath, todo.id, "  新 内容  ");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("# P0\n- [x] 新 内容\n");
   });
 });
 

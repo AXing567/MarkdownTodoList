@@ -21,6 +21,8 @@ npm run build
 ## Tests Required
 
 Add or update Vitest coverage whenever Markdown format behavior changes.
+Todo text editing must preserve the checkbox completion marker and rewrite only
+the text portion of the Markdown task line.
 
 ## Review Checklist
 

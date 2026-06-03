@@ -6,7 +6,8 @@ import {
   type CreateTodoListRequest,
   type TodoListDocument,
   type TodoListSummary,
-  type ToggleTodoRequest
+  type ToggleTodoRequest,
+  type UpdateTodoRequest
 } from "../shared/todoTypes";
 import { AppError } from "./errors";
 import {
@@ -16,7 +17,8 @@ import {
   createUntitledFileName,
   deriveDefaultName,
   readTodoFile,
-  setTodoCompletedInFile
+  setTodoCompletedInFile,
+  updateTodoTextInFile
 } from "./markdownTodo";
 import { getManagedTodoDir, getRegistryPath } from "./paths";
 import { findList, readRegistry, removeList, upsertList } from "./todoRegistry";
@@ -102,6 +104,13 @@ export async function toggleTodo(request: ToggleTodoRequest): Promise<TodoListDo
     request.todoId,
     request.completed
   );
+  const updatedSummary = await touchSummary(summary);
+  return { ...updatedSummary, todos };
+}
+
+export async function updateTodo(request: UpdateTodoRequest): Promise<TodoListDocument> {
+  const summary = await requireList(request.listId);
+  const todos = await updateTodoTextInFile(summary.filePath, request.todoId, request.text);
   const updatedSummary = await touchSummary(summary);
   return { ...updatedSummary, todos };
 }
