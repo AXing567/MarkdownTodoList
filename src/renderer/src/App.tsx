@@ -41,6 +41,11 @@ type TodoContextMenuState = {
   y: number;
 };
 
+type DraggingTodoState = {
+  priority: Priority;
+  todoId: string;
+};
+
 const completionEffectDurationMs = 1400;
 const todoContextMenuSize = {
   width: 150,
@@ -66,6 +71,8 @@ export function App(): ReactElement {
   const [drafts, setDrafts] = useState<DraftByPriority>(emptyDrafts);
   const [editingTodo, setEditingTodo] = useState<EditingTodoState | null>(null);
   const [todoContextMenu, setTodoContextMenu] = useState<TodoContextMenuState | null>(null);
+  const [draggingTodo, setDraggingTodo] = useState<DraggingTodoState | null>(null);
+  const [dragOverTodoId, setDragOverTodoId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [status, setStatus] = useState<StatusState>({ kind: "loading", message: "正在载入" });
   const copyTimerRef = useRef<number | null>(null);
@@ -316,6 +323,24 @@ export function App(): ReactElement {
     }, "已删除待办");
   }
 
+  async function reorderTodo(todo: TodoItem, targetTodo: TodoItem): Promise<void> {
+    if (!activeList || todo.id === targetTodo.id || todo.priority !== targetTodo.priority) {
+      clearDragState();
+      return;
+    }
+
+    await runAction(async () => {
+      const document = await window.todoApi.reorderTodo({
+        listId: activeList.id,
+        todoId: todo.id,
+        targetTodoId: targetTodo.id
+      });
+      setActiveList(document);
+      await refreshListSummaries();
+    }, "已调整待办顺序");
+    clearDragState();
+  }
+
   async function revealActiveFile(): Promise<void> {
     if (!activeList) {
       return;
@@ -364,6 +389,17 @@ export function App(): ReactElement {
       x: clampMenuPosition(event.clientX, window.innerWidth, todoContextMenuSize.width),
       y: clampMenuPosition(event.clientY, window.innerHeight, todoContextMenuSize.height)
     });
+  }
+
+  function startDraggingTodo(todo: TodoItem): void {
+    clearCopyTimer();
+    setTodoContextMenu(null);
+    setDraggingTodo({ priority: todo.priority, todoId: todo.id });
+  }
+
+  function clearDragState(): void {
+    setDraggingTodo(null);
+    setDragOverTodoId(null);
   }
 
   function clearCopyTimer(): void {
@@ -599,11 +635,15 @@ export function App(): ReactElement {
                       Boolean(activeList) &&
                       todo.completed &&
                       completionEffectKeys.has(createTodoEffectKey(activeList.id, todo.id));
+                    const isDragging = draggingTodo?.todoId === todo.id;
+                    const isDragTarget = dragOverTodoId === todo.id;
                     const todoClassName = [
                       "todo",
                       todo.completed ? "completed" : "",
                       isEditing ? "editing" : "",
-                      isCompletionEffectActive ? "completion-effect" : ""
+                      isCompletionEffectActive ? "completion-effect" : "",
+                      isDragging ? "dragging" : "",
+                      isDragTarget ? "drag-target" : ""
                     ]
                       .filter(Boolean)
                       .join(" ");
@@ -611,7 +651,40 @@ export function App(): ReactElement {
                       <li
                         key={todo.id}
                         className={todoClassName}
+                        draggable={!isEditing}
                         onContextMenu={(event) => openTodoContextMenu(event, activeList.id, todo)}
+                        onDragStart={(event) => {
+                          startDraggingTodo(todo);
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", todo.id);
+                        }}
+                        onDragOver={(event) => {
+                          if (draggingTodo?.priority !== todo.priority || draggingTodo.todoId === todo.id) {
+                            return;
+                          }
+
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                          setDragOverTodoId(todo.id);
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverTodoId === todo.id) {
+                            setDragOverTodoId(null);
+                          }
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          const draggedTodo = activeList.todos.find(
+                            (item) => item.id === draggingTodo?.todoId
+                          );
+                          if (!draggedTodo) {
+                            clearDragState();
+                            return;
+                          }
+
+                          void reorderTodo(draggedTodo, todo);
+                        }}
+                        onDragEnd={clearDragState}
                       >
                         <button
                           className="check-button"

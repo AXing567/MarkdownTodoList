@@ -7,6 +7,7 @@ import {
   createEmptyMarkdown,
   deleteTodoFromFile,
   parseMarkdown,
+  reorderTodoInFile,
   setTodoCompletedInFile,
   updateTodoTextInFile
 } from "./markdownTodo";
@@ -154,6 +155,36 @@ describe("markdownTodo", () => {
 
     await expect(readFile(filePath, "utf8")).resolves.toBe(
       "# P0\n- [ ] 保留\n- [ ] 也保留\n"
+    );
+  });
+
+  it("reorders todos within the same priority section", async () => {
+    const filePath = await createTempTodoFile(
+      "# P0\n- [ ] 第一项\n- [x] 第二项\n  第二项续行\n- [ ] 第三项\n\n# P1\n- [ ] 其他项\n"
+    );
+    const [firstTodo, , thirdTodo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!firstTodo || !thirdTodo) {
+      throw new Error("Expected test todos to exist");
+    }
+
+    await reorderTodoInFile(filePath, thirdTodo.id, firstTodo.id);
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(
+      "# P0\n- [ ] 第三项\n- [ ] 第一项\n- [x] 第二项\n  第二项续行\n\n# P1\n- [ ] 其他项\n"
+    );
+  });
+
+  it("rejects reorder across priority sections", async () => {
+    const filePath = await createTempTodoFile("# P0\n- [ ] 第一项\n\n# P1\n- [ ] 其他项\n");
+    const [firstTodo, otherTodo] = parseMarkdown(await readFile(filePath, "utf8"));
+
+    if (!firstTodo || !otherTodo) {
+      throw new Error("Expected test todos to exist");
+    }
+
+    await expect(reorderTodoInFile(filePath, firstTodo.id, otherTodo.id)).rejects.toThrow(
+      "没有找到对应的待办事项。"
     );
   });
 });

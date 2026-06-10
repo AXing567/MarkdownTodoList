@@ -142,6 +142,43 @@ export async function deleteTodoFromFile(filePath: string, todoId: string): Prom
   return parseMarkdown(nextContent);
 }
 
+export async function reorderTodoInFile(
+  filePath: string,
+  todoId: string,
+  targetTodoId: string
+): Promise<TodoItem[]> {
+  if (todoId === targetTodoId) {
+    return readTodoFile(filePath);
+  }
+
+  const content = await readFile(filePath, "utf8");
+  const parsed = parseMarkdownWithLines(content);
+  const todosById = new Map(parsed.todos.map((todo) => [todo.id, todo]));
+  const todo = todosById.get(todoId);
+  const targetTodo = todosById.get(targetTodoId);
+
+  if (!todo || !targetTodo || todo.priority !== targetTodo.priority) {
+    throw new AppError("TODO_NOT_FOUND", "没有找到对应的待办事项。");
+  }
+
+  const todoBlock = takeTodoBlock(parsed.lines, todoId);
+  const linesWithoutTodo = parsed.lines.filter((line) => line.todoId !== todoId);
+  const targetIndex = linesWithoutTodo.findIndex(
+    (line) => line.todoId === targetTodoId && line.todoLinePart === "task"
+  );
+
+  if (targetIndex === -1) {
+    throw new AppError("TODO_NOT_FOUND", "没有找到对应的待办事项。");
+  }
+
+  const nextLines = linesWithoutTodo.map((line) => line.raw);
+  nextLines.splice(targetIndex, 0, ...todoBlock);
+
+  const nextContent = normalizeTrailingNewline(nextLines.join("\n"));
+  await writeFile(filePath, nextContent, "utf8");
+  return parseMarkdown(nextContent);
+}
+
 export function deriveDefaultName(filePath: string): string {
   return basename(filePath).replace(/\.md$/i, "");
 }
@@ -287,6 +324,15 @@ function createTodoMarkdownLines(completedMark: string, text: string, indent = "
     `${indent}- [${completedMark}] ${firstLine}`,
     ...restLines.map((line) => `${indent}  ${line}`)
   ];
+}
+
+function takeTodoBlock(lines: ParsedLine[], todoId: string): string[] {
+  const block = lines.filter((line) => line.todoId === todoId).map((line) => line.raw);
+  if (block.length === 0) {
+    throw new AppError("TODO_NOT_FOUND", "没有找到对应的待办事项。");
+  }
+
+  return block;
 }
 
 function isPriority(value: string): value is Priority {

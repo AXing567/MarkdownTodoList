@@ -3,6 +3,7 @@ import type {
   AddTodoRequest,
   CreateTodoListRequest,
   DeleteTodoRequest,
+  ReorderTodoRequest,
   TodoApi,
   ToggleTodoRequest,
   UpdateTodoRequest
@@ -18,6 +19,7 @@ const todoApi: TodoApi = {
   toggleTodo: (request: ToggleTodoRequest) => ipcRenderer.invoke("todo:toggle", request),
   updateTodo: (request: UpdateTodoRequest) => ipcRenderer.invoke("todo:update", request),
   deleteTodo: (request: DeleteTodoRequest) => ipcRenderer.invoke("todo:delete", request),
+  reorderTodo: (request: ReorderTodoRequest) => ipcRenderer.invoke("todo:reorder", request),
   removeTodoList: (listId: string) => ipcRenderer.invoke("todo:remove", listId),
   revealFile: (listId: string) => ipcRenderer.invoke("todo:reveal", listId)
 };

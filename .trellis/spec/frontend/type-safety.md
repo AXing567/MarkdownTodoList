@@ -24,6 +24,7 @@ type TodoApi = {
   toggleTodo: (request: ToggleTodoRequest) => Promise<TodoListDocument>;
   updateTodo: (request: UpdateTodoRequest) => Promise<TodoListDocument>;
   deleteTodo: (request: DeleteTodoRequest) => Promise<TodoListDocument>;
+  reorderTodo: (request: ReorderTodoRequest) => Promise<TodoListDocument>;
   removeTodoList: (listId: string) => Promise<TodoListSummary[]>;
   revealFile: (listId: string) => Promise<void>;
 };

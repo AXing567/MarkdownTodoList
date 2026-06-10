@@ -9,6 +9,7 @@ import {
   openTodoList,
   readTodoList,
   removeTodoList,
+  reorderTodo,
   revealFile,
   toggleTodo,
   updateTodo
@@ -30,6 +31,9 @@ export function registerIpcHandlers(): void {
   );
   ipcMain.handle("todo:delete", (_event, request) =>
     withErrors(() => deleteTodo(request))
+  );
+  ipcMain.handle("todo:reorder", (_event, request) =>
+    withErrors(() => reorderTodo(request))
   );
   ipcMain.handle("todo:remove", (_event, listId) =>
     withErrors(() => removeTodoList(listId))
