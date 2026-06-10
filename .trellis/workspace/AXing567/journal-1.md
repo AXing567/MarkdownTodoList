@@ -63,3 +63,51 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Todo drag reordering
+
+**Date**: 2026-06-10
+**Task**: Todo drag reordering
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Drag ordering | Added drag-and-drop reordering for todos within the same priority column. |
+| Markdown persistence | Added `reorderTodo` IPC flow and Markdown block movement so multiline todos move as one unit. |
+| Tests | Added Markdown reorder tests for same-priority movement and cross-priority rejection. |
+| Release | Rebuilt portable Windows exe at `release/Markdown TodoList 0.1.0.exe`. |
+
+**Commit**:
+- f19aeae feat: reorder todos by dragging
+
+**Validation**:
+- `npm test`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f19aeae` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
