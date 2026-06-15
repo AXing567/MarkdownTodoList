@@ -1,0 +1,53 @@
+{
+  "id": "mobile-vps-sync",
+  "name": "mobile-vps-sync",
+  "title": "brainstorm: mobile todo with VPS sync",
+  "description": "",
+  "status": "completed",
+  "dev_type": "fullstack",
+  "scope": "sync",
+  "package": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-06-15",
+  "completedAt": "2026-06-15",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Implemented VPS-backed sync server, desktop remote sync/import-export flow, mobile/PWA and Android client packaging, and release artifacts for Windows, Android, and VPS deployment.",
+  "meta": {}
+}

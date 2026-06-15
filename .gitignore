@@ -6,3 +6,4 @@ dist/
 *.tsbuildinfo
 data/todolist-registry.json
 data/todolists/*.md
+data/*sync-server*.json

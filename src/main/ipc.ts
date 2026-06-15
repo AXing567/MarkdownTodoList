@@ -5,6 +5,8 @@ import {
   addTodo,
   createTodoList,
   deleteTodo,
+  exportMarkdown,
+  importMarkdown,
   listTodoLists,
   openTodoList,
   readTodoList,
@@ -39,6 +41,12 @@ export function registerIpcHandlers(): void {
     withErrors(() => removeTodoList(listId))
   );
   ipcMain.handle("todo:reveal", (_event, listId) => withErrors(() => revealFile(listId)));
+  ipcMain.handle("todo:import-markdown", (_event, request) =>
+    withErrors(() => importMarkdown(request))
+  );
+  ipcMain.handle("todo:export-markdown", (_event, listId) =>
+    withErrors(() => exportMarkdown(listId))
+  );
 }
 
 async function withErrors<T>(operation: () => Promise<T>): Promise<T> {

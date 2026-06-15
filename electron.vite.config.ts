@@ -11,6 +11,7 @@ export default defineConfig({
   },
   renderer: {
     root: "src/renderer",
+    base: "./",
     server: {
       host: "127.0.0.1",
       port: 43157,

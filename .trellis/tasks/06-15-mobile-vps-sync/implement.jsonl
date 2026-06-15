@@ -1,0 +1,13 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-15-mobile-vps-sync\\prd.md", "reason": "Confirmed MVP requirements and sync decisions"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Sync spans server, shared types, Electron IPC, renderer, and PWA"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Server persistence and existing local registry behavior"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Shared API contract changes"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Expected error patterns for backend/Electron boundaries"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Renderer state and mutation patterns"}
+{"file": "src\\shared\\todoTypes.ts", "reason": "Current shared Todo API types"}
+{"file": "src\\main\\markdownTodo.ts", "reason": "Existing Markdown import/export logic to reuse"}
+{"file": "src\\renderer\\src\\App.tsx", "reason": "Current renderer state and UI flow"}
+{"file": "src\\main\\todoService.ts", "reason": "Existing local todo operations and import/export boundary"}

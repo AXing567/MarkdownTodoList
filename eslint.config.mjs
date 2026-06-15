@@ -5,7 +5,13 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   js.configs.recommended,
   {
-    ignores: ["out", "release", "node_modules"]
+    ignores: [
+      "out",
+      "release",
+      "node_modules",
+      "android/app/build",
+      "android/app/src/main/assets/public"
+    ]
   },
   {
     files: ["**/*.cjs"],
@@ -14,6 +20,16 @@ export default tseslint.config(
       sourceType: "commonjs",
       globals: {
         ...globals.node
+      }
+    }
+  },
+  {
+    files: ["src/renderer/public/sw.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: {
+        ...globals.browser,
+        ...globals.serviceworker
       }
     }
   },

@@ -58,3 +58,14 @@ npm run lint
 npm run typecheck
 npm test
 ```
+
+## VPS Sync Server / Mobile PWA
+
+同步模式以服务端为权威数据源，桌面端和手机 PWA 都可以连接同一个私有 VPS 服务端。
+
+```bash
+npm run build:pwa
+TODO_ACCESS_KEY=change-this-secret TODO_PORT=43158 npm run sync:serve
+```
+
+手机端打开服务端 URL 后，填写服务器地址和访问密钥即可长期使用。部署细节见 `docs/sync-server.md`。

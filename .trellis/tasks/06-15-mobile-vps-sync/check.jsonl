@@ -1,0 +1,8 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-15-mobile-vps-sync\\prd.md", "reason": "Acceptance criteria for final verification"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Verify cross-layer contracts after implementation"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Final frontend quality checks"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Final backend quality checks"}
+{"file": "src\\shared\\todoTypes.ts", "reason": "Verify shared type compatibility"}
+{"file": "src\\renderer\\src\\App.tsx", "reason": "Verify UI behavior after sync changes"}

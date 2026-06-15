@@ -1,11 +1,13 @@
 import { dialog, shell } from "electron";
-import { access, mkdir, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   type AddTodoRequest,
   type CreateTodoListRequest,
   type DeleteTodoRequest,
+  type ExportMarkdownResponse,
   type ReorderTodoRequest,
+  type SaveMarkdownToLocalRequest,
   type TodoListDocument,
   type TodoListSummary,
   type ToggleTodoRequest,
@@ -147,11 +149,44 @@ export async function removeTodoList(listId: string): Promise<TodoListSummary[]>
   return result.lists;
 }
 
+export async function importMarkdown(
+  request: SaveMarkdownToLocalRequest
+): Promise<TodoListDocument> {
+  const name = normalizeListName(request.name);
+  const existingList = request.id ? await findList(getRegistryPath(), request.id) : null;
+  const filePath = existingList?.filePath ?? (await chooseExternalMarkdownPath(name));
+
+  if (!filePath) {
+    throw new AppError("FILE_SELECTION_CANCELLED", "已取消选择文件。");
+  }
+
+  await writeFile(filePath, normalizeMarkdownContent(request.markdown), "utf8");
+  return registerAndRead({
+    id: request.id ?? createListId(filePath),
+    name,
+    filePath,
+    storage: existingList?.storage ?? "external",
+    updatedAt: new Date().toISOString()
+  });
+}
+
+export async function exportMarkdown(listId: string): Promise<ExportMarkdownResponse> {
+  const summary = await requireList(listId);
+  return {
+    fileName: createUntitledFileName(summary.name),
+    markdown: await readFile(summary.filePath, "utf8")
+  };
+}
+
 async function createManagedFile(name: string): Promise<string> {
   const todoDir = getManagedTodoDir();
   await mkdir(todoDir, { recursive: true });
   const fileName = createUntitledFileName(name);
   return join(todoDir, fileName);
+}
+
+function normalizeMarkdownContent(markdown: string): string {
+  return markdown.replace(/\r\n/g, "\n").replace(/\s*$/u, "\n");
 }
 
 async function chooseExternalMarkdownPath(name: string): Promise<string | null> {

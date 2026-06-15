@@ -4,6 +4,7 @@ import type {
   CreateTodoListRequest,
   DeleteTodoRequest,
   ReorderTodoRequest,
+  SaveMarkdownToLocalRequest,
   TodoApi,
   ToggleTodoRequest,
   UpdateTodoRequest
@@ -21,7 +22,12 @@ const todoApi: TodoApi = {
   deleteTodo: (request: DeleteTodoRequest) => ipcRenderer.invoke("todo:delete", request),
   reorderTodo: (request: ReorderTodoRequest) => ipcRenderer.invoke("todo:reorder", request),
   removeTodoList: (listId: string) => ipcRenderer.invoke("todo:remove", listId),
-  revealFile: (listId: string) => ipcRenderer.invoke("todo:reveal", listId)
+  revealFile: (listId: string) => ipcRenderer.invoke("todo:reveal", listId),
+  importMarkdown: (request: SaveMarkdownToLocalRequest) =>
+    ipcRenderer.invoke("todo:import-markdown", request),
+  exportMarkdown: (listId: string) => ipcRenderer.invoke("todo:export-markdown", listId),
+  saveMarkdownToLocal: (request: SaveMarkdownToLocalRequest) =>
+    ipcRenderer.invoke("todo:import-markdown", request)
 };
 
 contextBridge.exposeInMainWorld("todoApi", todoApi);

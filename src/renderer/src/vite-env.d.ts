@@ -4,6 +4,6 @@ import type { TodoApi } from "../../shared/todoTypes";
 
 declare global {
   interface Window {
-    todoApi: TodoApi;
+    todoApi?: TodoApi;
   }
 }
