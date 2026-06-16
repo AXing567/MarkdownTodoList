@@ -1,0 +1,53 @@
+{
+  "id": "fix-sync-list-flicker",
+  "name": "fix-sync-list-flicker",
+  "title": "Fix todo list flicker after mutations",
+  "description": "",
+  "status": "completed",
+  "dev_type": "frontend",
+  "scope": "ui",
+  "package": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-06-16",
+  "completedAt": "2026-06-16",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": "ea7a7d4",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Fixed stale active-list selection during renderer sync refreshes and rebuilt Windows/Android test packages.",
+  "meta": {}
+}

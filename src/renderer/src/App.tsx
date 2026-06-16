@@ -120,6 +120,7 @@ export function App(): ReactElement {
   const copyTimerRef = useRef<number | null>(null);
   const editingTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const completionEffectTimersRef = useRef<Map<string, number>>(new Map());
+  const activeListIdRef = useRef<string | null>(null);
   const [completionEffectKeys, setCompletionEffectKeys] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -139,7 +140,7 @@ export function App(): ReactElement {
   useEffect(() => {
     if (!todoApi) {
       setLists([]);
-      setActiveList(null);
+      setActiveDocument(null);
       setStatus({
         kind: "idle",
         message: "请先配置同步服务器"
@@ -149,10 +150,10 @@ export function App(): ReactElement {
     }
 
     setSyncStatus(todoApi.getSyncStatus?.() ?? createLocalSyncStatus());
-    void loadLists(todoApi);
+    void loadLists(todoApi, activeListIdRef.current);
     const unsubscribe = todoApi.subscribeToChanges?.(() => {
       setSyncStatus(todoApi.getSyncStatus?.() ?? createLocalSyncStatus());
-      void loadLists(todoApi, activeList?.id);
+      void loadLists(todoApi, activeListIdRef.current);
     });
 
     return unsubscribe;
@@ -241,7 +242,12 @@ export function App(): ReactElement {
     savedRemoteConfig && window.todoApi?.openTodoList && window.todoApi.exportMarkdown
   );
 
-  async function loadLists(api = todoApi, preferredListId = activeList?.id): Promise<void> {
+  function setActiveDocument(document: TodoListDocument | null): void {
+    activeListIdRef.current = document?.id ?? null;
+    setActiveList(document);
+  }
+
+  async function loadLists(api = todoApi, preferredListId = activeListIdRef.current): Promise<void> {
     if (!api) {
       return;
     }
@@ -253,9 +259,9 @@ export function App(): ReactElement {
         summaries.find((summary) => summary.id === preferredListId) ?? summaries[0];
       if (nextList) {
         const document = await api.readTodoList(nextList.id);
-        setActiveList(document);
+        setActiveDocument(document);
       } else {
-        setActiveList(null);
+        setActiveDocument(null);
       }
       setSyncStatus(api.getSyncStatus?.() ?? createLocalSyncStatus());
     }, "已刷新 TodoList");
@@ -277,7 +283,7 @@ export function App(): ReactElement {
         name,
         mode: isRemoteMode ? "managed" : mode
       });
-      setActiveList(document);
+      setActiveDocument(document);
       setNewListName("");
       setIsCreateSheetOpen(false);
       await refreshListSummaries();
@@ -294,7 +300,7 @@ export function App(): ReactElement {
       if (!document) {
         return;
       }
-      setActiveList(document);
+      setActiveDocument(document);
       setIsCreateSheetOpen(false);
       await refreshListSummaries();
     }, "已打开 Markdown 文件");
@@ -314,7 +320,7 @@ export function App(): ReactElement {
         name: file.name.replace(/\.md$/i, ""),
         markdown
       });
-      setActiveList(document);
+      setActiveDocument(document);
       setIsCreateSheetOpen(false);
       await refreshListSummaries();
     }, "已导入 Markdown");
@@ -369,7 +375,7 @@ export function App(): ReactElement {
         });
         const enabledConfig = saveRemoteConfig(savedConfig);
         setRemoteConfig(enabledConfig);
-        setActiveList(remoteDocument);
+        setActiveDocument(remoteDocument);
         setIsSettingsSheetOpen(false);
         setStatus({ kind: "idle", message: "本地 MD 已同步到云端" });
       } finally {
@@ -402,7 +408,7 @@ export function App(): ReactElement {
       forgetRemoteConfig();
       setRemoteConfig(null);
       setTodoApi(createTodoApi(null));
-      setActiveList(localDocument);
+      setActiveDocument(localDocument);
       setStatus({ kind: "idle", message: "云端 MD 已同步到本地" });
     }, "云端 MD 已同步到本地");
   }
@@ -414,7 +420,7 @@ export function App(): ReactElement {
 
     await runAction(async () => {
       const document = await todoApi.readTodoList(listId);
-      setActiveList(document);
+      setActiveDocument(document);
     }, "已切换 TodoList");
   }
 
@@ -433,12 +439,12 @@ export function App(): ReactElement {
 
       const nextList = summaries[0];
       if (!nextList) {
-        setActiveList(null);
+        setActiveDocument(null);
         return;
       }
 
       const document = await todoApi.readTodoList(nextList.id);
-      setActiveList(document);
+      setActiveDocument(document);
     }, isRemoteMode ? "已删除列表" : "已从列表移除");
   }
 
@@ -459,7 +465,7 @@ export function App(): ReactElement {
         priority,
         text
       });
-      setActiveList(document);
+      setActiveDocument(document);
       setDrafts((current) => ({ ...current, [priority]: "" }));
       await refreshListSummaries();
     }, "已添加待办");
@@ -481,7 +487,7 @@ export function App(): ReactElement {
       } else {
         startCompletionEffect(activeList.id, todo.id);
       }
-      setActiveList(document);
+      setActiveDocument(document);
       await refreshListSummaries();
     }, todo.completed ? "已恢复待办" : "已完成待办");
   }
@@ -508,7 +514,7 @@ export function App(): ReactElement {
         todoId: todo.id,
         text: nextText
       });
-      setActiveList(document);
+      setActiveDocument(document);
       setEditingTodo(null);
       await refreshListSummaries();
     }, "已更新待办");
@@ -532,7 +538,7 @@ export function App(): ReactElement {
         listId: menuState.listId,
         todoId: menuState.todo.id
       });
-      setActiveList(document);
+      setActiveDocument(document);
       await refreshListSummaries();
     }, "已删除待办");
   }
@@ -549,7 +555,7 @@ export function App(): ReactElement {
         todoId: todo.id,
         targetTodoId: targetTodo.id
       });
-      setActiveList(document);
+      setActiveDocument(document);
       await refreshListSummaries();
     }, "已调整待办顺序");
     clearDragState();
