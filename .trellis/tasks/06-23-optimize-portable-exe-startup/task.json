@@ -1,0 +1,53 @@
+{
+  "id": "optimize-portable-exe-startup",
+  "name": "optimize-portable-exe-startup",
+  "title": "Optimize portable exe startup",
+  "description": "",
+  "status": "completed",
+  "dev_type": "frontend",
+  "scope": "build",
+  "package": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-06-23",
+  "completedAt": "2026-06-23",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Optimized Windows portable exe startup by moving Capacitor packages to dev dependencies, trimming Electron locales, and using a faster portable zip packaging strategy. Balanced test exe launches in about 3 seconds locally versus about 27 seconds for the prior portable exe.",
+  "meta": {}
+}

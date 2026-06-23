@@ -1,6 +1,6 @@
 {
   "name": "markdown-todolist",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A local Markdown-backed TodoList app.",
   "main": "./out/main/index.js",
   "private": true,
@@ -25,28 +25,36 @@
     "directories": {
       "output": "release"
     },
+    "electronLanguages": [
+      "en-US",
+      "zh-CN",
+      "zh-TW"
+    ],
     "files": [
       "out/**/*",
       "package.json"
     ],
     "win": {
+      "compression": "normal",
       "signAndEditExecutable": false,
       "target": [
-        "nsis",
         "portable"
       ]
+    },
+    "portable": {
+      "useZip": true
     }
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.0",
-    "@capacitor/core": "^8.4.0",
     "lucide-react": "^1.17.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@eslint/js": "^10.0.1",
     "@swc/core": "^1.15.40",
     "@types/node": "^25.9.1",
