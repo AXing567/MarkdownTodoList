@@ -37,6 +37,36 @@ describe("syncModel", () => {
     expect(exportListToMarkdown(snapshot.lists[0]!).markdown).toContain("- [ ] Ship sync");
   });
 
+  it("replaces an existing remote list when importing the same list id", () => {
+    const imported = applySyncOperation(createEmptySnapshot(), {
+      id: "op-import",
+      type: "importMarkdown",
+      createdAt: "2026-06-15T00:00:00.000Z",
+      payload: {
+        listId: "list-1",
+        name: "Work",
+        markdown: "# P0\n- [ ] Old item\n"
+      }
+    });
+
+    const restored = applySyncOperation(imported, {
+      id: "op-restore",
+      type: "importMarkdown",
+      createdAt: "2026-06-15T00:01:00.000Z",
+      payload: {
+        listId: "list-1",
+        name: "Work",
+        markdown: "# P0\n- [x] Restored item\n\n# P1\n\n# P2\n"
+      }
+    });
+
+    expect(restored.lists).toHaveLength(1);
+    expect(restored.lists[0]?.todos).toEqual([
+      expect.objectContaining({ text: "Restored item", completed: true })
+    ]);
+    expect(exportListToMarkdown(restored.lists[0]!).markdown).not.toContain("Old item");
+  });
+
   it("applies todo mutations with increasing versions", () => {
     const createList: SyncOperation = {
       id: "op-create",

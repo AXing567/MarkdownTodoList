@@ -1,0 +1,61 @@
+﻿{
+    "id":  "undo-and-completion-flicker",
+    "name":  "undo-and-completion-flicker",
+    "title":  "Add undo and fix completion flicker",
+    "description":  "",
+    "status":  "completed",
+    "dev_type":  "frontend",
+    "scope":  null,
+    "package":  null,
+    "priority":  "P2",
+    "creator":  "codex-agent",
+    "assignee":  "codex-agent",
+    "createdAt":  "2026-06-25",
+    "completedAt":  "2026-06-25",
+    "branch":  null,
+    "base_branch":  "main",
+    "worktree_path":  null,
+    "current_phase":  6,
+    "next_action":  [
+                        {
+                            "phase":  1,
+                            "action":  "brainstorm"
+                        },
+                        {
+                            "phase":  2,
+                            "action":  "research"
+                        },
+                        {
+                            "phase":  3,
+                            "action":  "implement"
+                        },
+                        {
+                            "phase":  4,
+                            "action":  "check"
+                        },
+                        {
+                            "phase":  5,
+                            "action":  "update-spec"
+                        },
+                        {
+                            "phase":  6,
+                            "action":  "record-session"
+                        }
+                    ],
+    "commit":  null,
+    "pr_url":  null,
+    "subtasks":  [
+
+                 ],
+    "children":  [
+
+                 ],
+    "parent":  null,
+    "relatedFiles":  [
+
+                     ],
+    "notes":  "Added persistent undo for add/toggle/edit/delete/reorder via the existing importMarkdown restore path, added desktop and mobile undo controls plus Ctrl+Z outside text inputs, and preserved the active document during in-flight completion updates to prevent completed rows from flickering. Verified lint, typecheck, tests, build, Android debug APK build, Windows portable exe build, and Windows exe startup smoke test. Hotfix: fixed remote undo/import/export by preserving TodoApi method ownership instead of detaching class methods, preventing RemoteTodoApi.applyOperation from losing this. Rebuilt packages as release\\MarkdownTodoList-windows-portable-0.1.2-undo-hotfix.exe and release\\MarkdownTodoList-android-debug-0.1.2-undo-hotfix.apk.",
+    "meta":  {
+
+             }
+}

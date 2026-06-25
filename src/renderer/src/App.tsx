@@ -16,6 +16,7 @@ import {
   Server,
   Settings,
   Trash2,
+  Undo2,
   Upload,
   X
 } from "lucide-react";
@@ -23,6 +24,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, ReactElement } from "react";
 import {
   PRIORITIES,
+  type ExportMarkdownResponse,
+  type ImportMarkdownRequest,
   type Priority,
   type SyncServerConfig,
   type SyncStatus,
@@ -31,6 +34,7 @@ import {
   type TodoListDocument,
   type TodoListSummary
 } from "../../shared/todoTypes";
+import { exportListToMarkdown } from "../../shared/syncModel";
 import {
   createTodoApi,
   deleteSavedRemoteConfig,
@@ -66,7 +70,33 @@ type DraggingTodoState = {
   todoId: string;
 };
 
+type UndoEntry = {
+  document: TodoListDocument;
+  message: string;
+};
+
+type LoadListsOptions = {
+  preserveActiveDocument?: boolean;
+};
+
+type TodoApiWithImportMarkdown = TodoApi & {
+  importMarkdown: (request: ImportMarkdownRequest) => Promise<TodoListDocument>;
+};
+
+type TodoApiWithExportMarkdown = TodoApi & {
+  exportMarkdown: (listId: string) => Promise<ExportMarkdownResponse>;
+};
+
+function hasImportMarkdown(api: TodoApi | null): api is TodoApiWithImportMarkdown {
+  return typeof api?.importMarkdown === "function";
+}
+
+function hasExportMarkdown(api: TodoApi | null): api is TodoApiWithExportMarkdown {
+  return typeof api?.exportMarkdown === "function";
+}
+
 const completionEffectDurationMs = 1400;
+const maxUndoEntries = 20;
 const todoContextMenuSize = {
   width: 150,
   height: 44
@@ -120,8 +150,11 @@ export function App(): ReactElement {
   const copyTimerRef = useRef<number | null>(null);
   const editingTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const completionEffectTimersRef = useRef<Map<string, number>>(new Map());
+  const activeDocumentRef = useRef<TodoListDocument | null>(null);
   const activeListIdRef = useRef<string | null>(null);
+  const activeMutationListIdRef = useRef<string | null>(null);
   const [completionEffectKeys, setCompletionEffectKeys] = useState<Set<string>>(() => new Set());
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
 
   useEffect(() => {
     return () => {
@@ -132,6 +165,7 @@ export function App(): ReactElement {
 
   useEffect(() => {
     setTodoApi(createTodoApi(remoteConfig));
+    setUndoStack([]);
     const savedConfig = remoteConfig ?? getSavedRemoteConfig();
     setServerUrlDraft(savedConfig?.serverUrl ?? "");
     setAccessKeyDraft(savedConfig?.accessKey ?? "");
@@ -153,7 +187,11 @@ export function App(): ReactElement {
     void loadLists(todoApi, activeListIdRef.current);
     const unsubscribe = todoApi.subscribeToChanges?.(() => {
       setSyncStatus(todoApi.getSyncStatus?.() ?? createLocalSyncStatus());
-      void loadLists(todoApi, activeListIdRef.current);
+      const preferredListId = activeListIdRef.current;
+      void loadLists(todoApi, preferredListId, {
+        preserveActiveDocument:
+          Boolean(preferredListId) && activeMutationListIdRef.current === preferredListId
+      });
     });
 
     return unsubscribe;
@@ -211,6 +249,29 @@ export function App(): ReactElement {
     resizeTodoEditTextarea(textarea);
   }, [editingTodo?.text]);
 
+  useEffect(() => {
+    function handleUndoShortcut(event: KeyboardEvent): void {
+      if (
+        event.key.toLowerCase() !== "z" ||
+        event.shiftKey ||
+        (!event.ctrlKey && !event.metaKey) ||
+        isEditableShortcutTarget(event.target)
+      ) {
+        return;
+      }
+
+      if (undoStack.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      void undoLastAction();
+    }
+
+    window.addEventListener("keydown", handleUndoShortcut);
+    return () => window.removeEventListener("keydown", handleUndoShortcut);
+  }, [todoApi, undoStack]);
+
   const visibleTodosByPriority = useMemo(() => {
     const grouped = new Map<Priority, TodoItem[]>();
     for (const priority of PRIORITIES) {
@@ -241,13 +302,19 @@ export function App(): ReactElement {
   const canUploadLocalMarkdown = Boolean(
     savedRemoteConfig && window.todoApi?.openTodoList && window.todoApi.exportMarkdown
   );
+  const canUndo = Boolean(todoApi?.importMarkdown && undoStack.length > 0);
 
   function setActiveDocument(document: TodoListDocument | null): void {
     activeListIdRef.current = document?.id ?? null;
+    activeDocumentRef.current = document;
     setActiveList(document);
   }
 
-  async function loadLists(api = todoApi, preferredListId = activeListIdRef.current): Promise<void> {
+  async function loadLists(
+    api = todoApi,
+    preferredListId = activeListIdRef.current,
+    options: LoadListsOptions = {}
+  ): Promise<void> {
     if (!api) {
       return;
     }
@@ -258,6 +325,13 @@ export function App(): ReactElement {
       const nextList =
         summaries.find((summary) => summary.id === preferredListId) ?? summaries[0];
       if (nextList) {
+        if (
+          options.preserveActiveDocument &&
+          activeDocumentRef.current?.id === nextList.id
+        ) {
+          return;
+        }
+
         const document = await api.readTodoList(nextList.id);
         setActiveDocument(document);
       } else {
@@ -309,14 +383,14 @@ export function App(): ReactElement {
   async function importMarkdown(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0];
     event.target.value = "";
-    const importMarkdownFile = todoApi?.importMarkdown;
-    if (!file || !importMarkdownFile) {
+    const api = todoApi;
+    if (!file || !hasImportMarkdown(api)) {
       return;
     }
 
     await runAction(async () => {
       const markdown = await file.text();
-      const document = await importMarkdownFile({
+      const document = await api.importMarkdown({
         name: file.name.replace(/\.md$/i, ""),
         markdown
       });
@@ -327,13 +401,13 @@ export function App(): ReactElement {
   }
 
   async function exportMarkdown(): Promise<void> {
-    const exportMarkdownFile = todoApi?.exportMarkdown;
-    if (!activeList || !exportMarkdownFile) {
+    const api = todoApi;
+    if (!activeList || !hasExportMarkdown(api)) {
       return;
     }
 
     await runAction(async () => {
-      const result = await exportMarkdownFile(activeList.id);
+      const result = await api.exportMarkdown(activeList.id);
       downloadTextFile(result.fileName, result.markdown);
     }, "已导出 Markdown");
   }
@@ -459,12 +533,15 @@ export function App(): ReactElement {
       return;
     }
 
+    const undoDocument = cloneDocument(activeList);
     await runAction(async () => {
-      const document = await todoApi.addTodo({
-        listId: activeList.id,
-        priority,
-        text
-      });
+      const document = await persistTodoChange(undoDocument, "已撤销新增待办", () =>
+        todoApi.addTodo({
+          listId: activeList.id,
+          priority,
+          text
+        })
+      );
       setActiveDocument(document);
       setDrafts((current) => ({ ...current, [priority]: "" }));
       await refreshListSummaries();
@@ -476,16 +553,29 @@ export function App(): ReactElement {
       return;
     }
 
+    const undoDocument = cloneDocument(activeList);
+    const nextCompleted = !todo.completed;
+    if (nextCompleted) {
+      startCompletionEffect(activeList.id, todo.id);
+    } else {
+      stopCompletionEffect(activeList.id, todo.id);
+    }
+
     await runAction(async () => {
-      const document = await todoApi.toggleTodo({
-        listId: activeList.id,
-        todoId: todo.id,
-        completed: !todo.completed
-      });
-      if (todo.completed) {
-        stopCompletionEffect(activeList.id, todo.id);
-      } else {
-        startCompletionEffect(activeList.id, todo.id);
+      let document: TodoListDocument;
+      try {
+        document = await persistTodoChange(undoDocument, "已撤销完成状态", () =>
+          todoApi.toggleTodo({
+            listId: activeList.id,
+            todoId: todo.id,
+            completed: nextCompleted
+          })
+        );
+      } catch (error) {
+        if (nextCompleted) {
+          stopCompletionEffect(activeList.id, todo.id);
+        }
+        throw error;
       }
       setActiveDocument(document);
       await refreshListSummaries();
@@ -508,12 +598,15 @@ export function App(): ReactElement {
       return;
     }
 
+    const undoDocument = cloneDocument(activeList);
     await runAction(async () => {
-      const document = await todoApi.updateTodo({
-        listId: activeList.id,
-        todoId: todo.id,
-        text: nextText
-      });
+      const document = await persistTodoChange(undoDocument, "已撤销编辑待办", () =>
+        todoApi.updateTodo({
+          listId: activeList.id,
+          todoId: todo.id,
+          text: nextText
+        })
+      );
       setActiveDocument(document);
       setEditingTodo(null);
       await refreshListSummaries();
@@ -521,10 +614,11 @@ export function App(): ReactElement {
   }
 
   async function deleteTodoItem(menuState: TodoContextMenuState): Promise<void> {
-    if (!todoApi) {
+    if (!activeList || !todoApi) {
       return;
     }
 
+    const undoDocument = cloneDocument(activeList);
     setTodoContextMenu(null);
     clearCopyTimer();
     stopCompletionEffect(menuState.listId, menuState.todo.id);
@@ -534,10 +628,12 @@ export function App(): ReactElement {
     }
 
     await runAction(async () => {
-      const document = await todoApi.deleteTodo({
-        listId: menuState.listId,
-        todoId: menuState.todo.id
-      });
+      const document = await persistTodoChange(undoDocument, "已撤销删除待办", () =>
+        todoApi.deleteTodo({
+          listId: menuState.listId,
+          todoId: menuState.todo.id
+        })
+      );
       setActiveDocument(document);
       await refreshListSummaries();
     }, "已删除待办");
@@ -549,12 +645,15 @@ export function App(): ReactElement {
       return;
     }
 
+    const undoDocument = cloneDocument(activeList);
     await runAction(async () => {
-      const document = await todoApi.reorderTodo({
-        listId: activeList.id,
-        todoId: todo.id,
-        targetTodoId: targetTodo.id
-      });
+      const document = await persistTodoChange(undoDocument, "已撤销调整顺序", () =>
+        todoApi.reorderTodo({
+          listId: activeList.id,
+          todoId: todo.id,
+          targetTodoId: targetTodo.id
+        })
+      );
       setActiveDocument(document);
       await refreshListSummaries();
     }, "已调整待办顺序");
@@ -716,6 +815,66 @@ export function App(): ReactElement {
       window.clearTimeout(timerId);
     }
     completionEffectTimersRef.current.clear();
+  }
+
+  async function persistTodoChange(
+    undoDocument: TodoListDocument,
+    undoMessage: string,
+    operation: () => Promise<TodoListDocument>
+  ): Promise<TodoListDocument> {
+    activeMutationListIdRef.current = undoDocument.id;
+    try {
+      const document = await operation();
+      setUndoStack((current) =>
+        [...current, { document: cloneDocument(undoDocument), message: undoMessage }].slice(
+          -maxUndoEntries
+        )
+      );
+      return document;
+    } finally {
+      if (activeMutationListIdRef.current === undoDocument.id) {
+        activeMutationListIdRef.current = null;
+      }
+    }
+  }
+
+  async function undoLastAction(): Promise<void> {
+    const api = todoApi;
+    const undoEntry = undoStack.at(-1);
+    if (!hasImportMarkdown(api) || !undoEntry) {
+      setStatus({ kind: "idle", message: "没有可撤销的操作" });
+      return;
+    }
+
+    clearCopyTimer();
+    clearDragState();
+    clearCompletionEffectTimers();
+    setCompletionEffectKeys(new Set());
+    setEditingTodo(null);
+    setTodoContextMenu(null);
+    activeMutationListIdRef.current = undoEntry.document.id;
+
+    await runAction(async () => {
+      try {
+        const markdown = exportListToMarkdown(undoEntry.document).markdown;
+        const document = await api.importMarkdown({
+          id: undoEntry.document.id,
+          name: undoEntry.document.name,
+          markdown
+        });
+        setUndoStack((current) =>
+          current.at(-1) === undoEntry
+            ? current.slice(0, -1)
+            : current.filter((entry) => entry !== undoEntry)
+        );
+        setActiveDocument(document);
+        await refreshListSummaries();
+      } finally {
+        if (activeMutationListIdRef.current === undoEntry.document.id) {
+          activeMutationListIdRef.current = null;
+        }
+      }
+    }, undoEntry.message);
   }
 
   async function refreshListSummaries(): Promise<void> {
@@ -889,18 +1048,30 @@ export function App(): ReactElement {
           <strong>{activeList?.name ?? "Markdown TodoList"}</strong>
           <span>{syncStatus?.message ?? (isRemoteMode ? "云端同步" : "本地模式")}</span>
         </div>
-        <button
-          className="icon-button"
-          type="button"
-          title="设置"
-          aria-label="打开设置"
-          onClick={() => {
-            setIsSettingsSheetOpen(true);
-            setIsCreateSheetOpen(false);
-          }}
-        >
-          <Settings size={20} />
-        </button>
+        <div className="mobile-topbar-actions">
+          <button
+            className="icon-button"
+            type="button"
+            title="撤销"
+            aria-label="撤销上一步操作"
+            disabled={!canUndo}
+            onClick={() => void undoLastAction()}
+          >
+            <Undo2 size={20} />
+          </button>
+          <button
+            className="icon-button"
+            type="button"
+            title="设置"
+            aria-label="打开设置"
+            onClick={() => {
+              setIsSettingsSheetOpen(true);
+              setIsCreateSheetOpen(false);
+            }}
+          >
+            <Settings size={20} />
+          </button>
+        </div>
       </header>
 
       <aside className="sidebar">
@@ -952,6 +1123,15 @@ export function App(): ReactElement {
                 <button type="button" onClick={() => setShowCompleted((value) => !value)}>
                   {showCompleted ? <EyeOff size={17} /> : <Eye size={17} />}
                   {showCompleted ? "隐藏完成" : "显示完成"}
+                </button>
+                <button
+                  type="button"
+                  title="撤销上一步操作（Ctrl+Z）"
+                  disabled={!canUndo}
+                  onClick={() => void undoLastAction()}
+                >
+                  <Undo2 size={17} />
+                  撤销
                 </button>
                 {todoApi?.exportMarkdown ? (
                   <button type="button" onClick={() => void exportMarkdown()}>
@@ -1298,6 +1478,25 @@ function readApiError(error: unknown): string {
 function resizeTodoEditTextarea(textarea: HTMLTextAreaElement): void {
   textarea.style.height = "auto";
   textarea.style.height = `${Math.min(textarea.scrollHeight, 320)}px`;
+}
+
+function cloneDocument(document: TodoListDocument): TodoListDocument {
+  return {
+    ...document,
+    todos: document.todos.map((todo) => ({ ...todo }))
+  };
+}
+
+function isEditableShortcutTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target.isContentEditable
+  );
 }
 
 function createTodoEffectKey(listId: string, todoId: string): string {

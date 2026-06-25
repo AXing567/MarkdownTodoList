@@ -44,6 +44,11 @@ button:hover {
   background: #f8fafc;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
@@ -787,7 +792,7 @@ textarea {
     z-index: 20;
     inset: 0 0 auto;
     display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    grid-template-columns: 42px minmax(0, 1fr) 92px;
     align-items: center;
     gap: 10px;
     height: 58px;
@@ -795,6 +800,12 @@ textarea {
     padding: 8px 12px;
     background: rgb(255 255 255 / 0.96);
     backdrop-filter: blur(12px);
+  }
+
+  .mobile-topbar-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 
   .mobile-title {

@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Undo and flicker touch renderer document state"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Renderer state stays in App unless reuse warrants hook"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Required handoff checks"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "TodoApi and strict typing"}

@@ -23,3 +23,6 @@ npm run build
 * Are IPC errors surfaced to the user?
 * Does the UI work for no lists, no active list, and no visible todos?
 * Do icon-only buttons have labels?
+* Are optional `TodoApi` methods invoked through their owning API object instead
+  of being detached into standalone function variables? Remote API methods rely
+  on their class instance `this` binding.
